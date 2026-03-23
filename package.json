@@ -1,0 +1,14 @@
+{
+  "name": "akist-dayboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A standalone daily planning app focused on clarity, flow, and user experience.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Akist Dayboard</title>
+    <meta
+      name="description"
+      content="A standalone daily planner designed for momentum, clarity, and focus."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="ambient ambient-a"></div>
+      <div class="ambient ambient-b"></div>
+
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Standalone Day Organizer</p>
+          <h1>Akist Dayboard</h1>
+          <p class="subtitle">
+            A calmer task app built to organize the day, not disappear inside a
+            larger ecosystem.
+          </p>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="date-card">
+            <span class="label">Today</span>
+            <strong id="todayLabel"></strong>
+            <span id="timeLabel" class="muted"></span>
+          </div>
+          <div class="date-card network-card">
+            <span class="label">Network</span>
+            <strong id="networkLabel">Local only</strong>
+            <span id="networkHint" class="muted">Install Node, run once, open in browser</span>
+          </div>
+          <button id="autoPlanBtn" class="button button-primary" type="button">
+            Auto-plan the day
+          </button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <aside class="sidebar panel">
+          <section class="panel-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Quick Capture</p>
+                <h2>Add a task</h2>
+              </div>
+            </div>
+
+            <form id="taskForm" class="task-form">
+              <label>
+                <span>Title</span>
+                <input
+                  id="taskTitle"
+                  name="title"
+                  type="text"
+                  placeholder="Finish proposal draft"
+                  maxlength="80"
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Notes</span>
+                <textarea
+                  id="taskNotes"
+                  name="notes"
+                  rows="3"
+                  placeholder="What does done look like?"
+                  maxlength="220"
+                ></textarea>
+              </label>
+
+              <div class="field-grid">
+                <label>
+                  <span>Duration</span>
+                  <select id="taskDuration" name="duration">
+                    <option value="15">15 min</option>
+                    <option value="30" selected>30 min</option>
+                    <option value="45">45 min</option>
+                    <option value="60">60 min</option>
+                    <option value="90">90 min</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Energy</span>
+                  <select id="taskEnergy" name="energy">
+                    <option value="light">Light</option>
+                    <option value="steady" selected>Steady</option>
+                    <option value="deep">Deep</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="field-grid">
+                <label>
+                  <span>Urgency</span>
+                  <select id="taskUrgency" name="urgency">
+                    <option value="today" selected>Today</option>
+                    <option value="soon">Soon</option>
+                    <option value="someday">Someday</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Zone</span>
+                  <select id="taskLane" name="lane">
+                    <option value="inbox" selected>Inbox</option>
+                    <option value="focus">Focus queue</option>
+                    <option value="personal">Personal</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+              </div>
+
+              <button class="button button-primary button-block" type="submit">
+                Add to dayboard
+              </button>
+            </form>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Principles</p>
+                <h2>Why this feels different</h2>
+              </div>
+            </div>
+            <ul class="mini-list">
+              <li>The board is organized around a real day, not an endless list.</li>
+              <li>The app recommends what fits now instead of asking you to decide from scratch.</li>
+              <li>Focus tasks, admin work, and personal items can coexist without feeling messy.</li>
+              <li>Your data is stored by your own Node server on your own machine.</li>
+            </ul>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Keyboard</p>
+                <h2>Shortcuts</h2>
+              </div>
+            </div>
+            <ul class="mini-list">
+              <li><kbd>N</kbd> jump to new task</li>
+              <li><kbd>/</kbd> focus search</li>
+              <li><kbd>Shift</kbd> + <kbd>A</kbd> auto-plan</li>
+            </ul>
+          </section>
+        </aside>
+
+        <section class="main-column">
+          <section class="hero-grid">
+            <article class="hero-card panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Next Up</p>
+                  <h2>Recommended focus</h2>
+                </div>
+              </div>
+              <div id="recommendationCard" class="recommendation-card"></div>
+            </article>
+
+            <article class="stats-card panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Load</p>
+                  <h2>Today at a glance</h2>
+                </div>
+              </div>
+              <div class="stats-grid">
+                <div>
+                  <span class="label">Open tasks</span>
+                  <strong id="openCount">0</strong>
+                </div>
+                <div>
+                  <span class="label">Done today</span>
+                  <strong id="doneCount">0</strong>
+                </div>
+                <div>
+                  <span class="label">Planned minutes</span>
+                  <strong id="plannedMinutes">0</strong>
+                </div>
+                <div>
+                  <span class="label">Carryover</span>
+                  <strong id="carryoverCount">0</strong>
+                </div>
+              </div>
+              <div class="load-bar">
+                <span id="loadFill"></span>
+              </div>
+            </article>
+          </section>
+
+          <section class="notes-grid">
+            <article class="panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Anchor</p>
+                  <h2>Day intention</h2>
+                </div>
+              </div>
+              <textarea
+                id="intentionInput"
+                class="note-input"
+                rows="4"
+                placeholder="What would make today feel well used?"
+              ></textarea>
+            </article>
+
+            <article class="panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Closeout</p>
+                  <h2>Shutdown note</h2>
+                </div>
+              </div>
+              <textarea
+                id="reflectionInput"
+                class="note-input"
+                rows="4"
+                placeholder="What should tomorrow inherit from today?"
+              ></textarea>
+            </article>
+          </section>
+
+          <section class="panel board-panel">
+            <div class="board-topbar">
+              <div>
+                <p class="eyebrow">Working Board</p>
+                <h2>Your day, organized</h2>
+              </div>
+              <div class="board-controls">
+                <label class="search-field">
+                  <span class="sr-only">Search tasks</span>
+                  <input
+                    id="searchInput"
+                    type="search"
+                    placeholder="Search tasks or notes"
+                  />
+                </label>
+                <div class="filter-chips" id="filterChips">
+                  <button class="chip is-active" data-filter="all" type="button">All</button>
+                  <button class="chip" data-filter="focus" type="button">Focus</button>
+                  <button class="chip" data-filter="quick" type="button">Quick wins</button>
+                  <button class="chip" data-filter="deep" type="button">Deep work</button>
+                  <button class="chip" data-filter="carryover" type="button">Carryover</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="board-grid">
+              <article class="board-column">
+                <div class="column-heading">
+                  <h3>Focus queue</h3>
+                  <span id="focusCountBadge" class="count-badge">0</span>
+                </div>
+                <div id="focusList" class="task-list"></div>
+              </article>
+
+              <article class="board-column">
+                <div class="column-heading">
+                  <h3>Inbox</h3>
+                  <span id="inboxCountBadge" class="count-badge">0</span>
+                </div>
+                <div id="inboxList" class="task-list"></div>
+              </article>
+
+              <article class="board-column">
+                <div class="column-heading">
+                  <h3>Time map</h3>
+                </div>
+                <div class="time-map">
+                  <section>
+                    <div class="time-slot-heading">
+                      <h4>Morning</h4>
+                      <span>High energy</span>
+                    </div>
+                    <div id="morningList" class="task-list compact"></div>
+                  </section>
+                  <section>
+                    <div class="time-slot-heading">
+                      <h4>Afternoon</h4>
+                      <span>Steady work</span>
+                    </div>
+                    <div id="afternoonList" class="task-list compact"></div>
+                  </section>
+                  <section>
+                    <div class="time-slot-heading">
+                      <h4>Evening</h4>
+                      <span>Light wrap-up</span>
+                    </div>
+                    <div id="eveningList" class="task-list compact"></div>
+                  </section>
+                </div>
+              </article>
+
+              <article class="board-column">
+                <div class="column-heading">
+                  <h3>Done</h3>
+                  <span id="doneCountBadge" class="count-badge">0</span>
+                </div>
+                <div id="doneList" class="task-list"></div>
+              </article>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <template id="taskCardTemplate">
+      <article class="task-card">
+        <div class="task-card-main">
+          <div class="task-meta-row">
+            <span class="task-chip"></span>
+            <span class="task-chip"></span>
+            <span class="task-chip"></span>
+          </div>
+          <h4 class="task-title"></h4>
+          <p class="task-notes"></p>
+          <div class="task-flags"></div>
+        </div>
+        <div class="task-actions"></div>
+      </article>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
