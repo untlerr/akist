@@ -17,6 +17,8 @@ const state = {
   todayKey: "",
   showCompleted: false,
   search: "",
+  editingTaskId: null,
+  menuTaskId: null,
 };
 
 init();
@@ -24,12 +26,12 @@ init();
 async function init() {
   bindEvents();
   renderDateTime();
-  window.setInterval(renderDateTime, 30000);
+  window.setInterval(renderDateTime, 1000);
 
   try {
     const bootstrap = await api("/api/bootstrap");
     state.tasks = Array.isArray(bootstrap.data.tasks) ? bootstrap.data.tasks : [];
-    state.todayKey = bootstrap.todayKey;
+    state.todayKey = getEasternDateKey() || bootstrap.todayKey;
     render();
   } catch (error) {
     console.error(error);
@@ -42,11 +44,18 @@ function bindEvents() {
   els.searchInput.addEventListener("input", handleSearch);
   els.toggleCompletedBtn.addEventListener("click", toggleCompleted);
   document.addEventListener("click", handleTaskAction);
+  document.addEventListener("submit", handleTaskFormActions);
   document.addEventListener("keydown", handleShortcuts);
 }
 
 function renderDateTime() {
   const now = new Date();
+  const nextTodayKey = getEasternDateKey();
+  if (nextTodayKey && nextTodayKey !== state.todayKey) {
+    state.todayKey = nextTodayKey;
+    render();
+  }
+
   els.todayLabel.textContent = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
@@ -56,6 +65,7 @@ function renderDateTime() {
   els.timeLabel.textContent = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    second: "2-digit",
     timeZone: "America/New_York",
     timeZoneName: "short",
   }).format(now);
@@ -96,6 +106,7 @@ function renderTaskList(container, tasks) {
 function createTaskCard(task) {
   const node = els.taskCardTemplate.content.firstElementChild.cloneNode(true);
   node.classList.toggle("is-done", task.done);
+  node.dataset.id = task.id;
 
   const checkButton = node.querySelector(".check-button");
   checkButton.dataset.action = "toggle-done";
@@ -117,12 +128,28 @@ function createTaskCard(task) {
   pinEl.textContent = "Pinned";
   pinEl.classList.toggle("is-visible", Boolean(task.pinned));
 
-  const [pinButton, deleteButton] = node.querySelectorAll(".task-action");
+  const editForm = node.querySelector(".task-edit-form");
+  editForm.classList.toggle("is-hidden", state.editingTaskId !== task.id);
+  editForm.dataset.id = task.id;
+  editForm.querySelector(".task-edit-title").value = task.title;
+  editForm.querySelector(".task-edit-date").value = task.dueDate || "";
+
+  const pinButton = node.querySelector(".pin-button");
   pinButton.dataset.action = "toggle-pin";
   pinButton.dataset.id = task.id;
-  pinButton.textContent = task.pinned ? "Unpin" : "Pin";
-  deleteButton.dataset.action = "delete-task";
-  deleteButton.dataset.id = task.id;
+  pinButton.classList.toggle("is-pinned", Boolean(task.pinned));
+
+  const menuButton = node.querySelector(".menu-button");
+  menuButton.dataset.action = "toggle-menu";
+  menuButton.dataset.id = task.id;
+
+  const menu = node.querySelector(".task-menu");
+  menu.classList.toggle("is-hidden", state.menuTaskId !== task.id);
+
+  const menuItems = node.querySelectorAll(".task-menu-item");
+  menuItems.forEach((item) => {
+    item.dataset.id = task.id;
+  });
 
   return node;
 }
@@ -162,22 +189,49 @@ function toggleCompleted() {
 }
 
 async function handleTaskAction(event) {
-  const button = event.target.closest("[data-action]");
-  if (!button) {
+  if (!event.target.closest("[data-action]")) {
+    if (state.menuTaskId !== null) {
+      state.menuTaskId = null;
+      render();
+    }
     return;
   }
 
+  const button = event.target.closest("[data-action]");
   const taskId = button.dataset.id;
   const task = state.tasks.find((item) => item.id === taskId);
+  const action = button.dataset.action;
+
+  if (action === "toggle-menu") {
+    state.menuTaskId = state.menuTaskId === taskId ? null : taskId;
+    render();
+    return;
+  }
+
   if (!task) {
     return;
   }
 
-  const action = button.dataset.action;
+  state.menuTaskId = null;
 
   if (action === "delete-task") {
     await api(`/api/tasks/${taskId}`, { method: "DELETE" });
     state.tasks = state.tasks.filter((item) => item.id !== taskId);
+    if (state.editingTaskId === taskId) {
+      state.editingTaskId = null;
+    }
+    render();
+    return;
+  }
+
+  if (action === "start-edit") {
+    state.editingTaskId = taskId;
+    render();
+    return;
+  }
+
+  if (action === "cancel-edit") {
+    state.editingTaskId = null;
     render();
     return;
   }
@@ -198,8 +252,36 @@ async function handleTaskAction(event) {
       body: JSON.stringify({ done: !task.done }),
     });
     replaceTask(response.task);
+    if (response.task.done && state.editingTaskId === taskId) {
+      state.editingTaskId = null;
+    }
     render();
   }
+}
+
+async function handleTaskFormActions(event) {
+  const form = event.target.closest(".task-edit-form");
+  if (!form) {
+    return;
+  }
+
+  event.preventDefault();
+  const taskId = form.dataset.id;
+  const title = form.querySelector(".task-edit-title").value.trim();
+  const dueDate = form.querySelector(".task-edit-date").value || null;
+
+  if (!title) {
+    return;
+  }
+
+  const response = await api(`/api/tasks/${taskId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ title, dueDate }),
+  });
+
+  replaceTask(response.task);
+  state.editingTaskId = null;
+  render();
 }
 
 function handleShortcuts(event) {
@@ -214,6 +296,12 @@ function handleShortcuts(event) {
   if (!typing && event.key === "/") {
     event.preventDefault();
     els.searchInput.focus();
+  }
+
+  if (event.key === "Escape" && (state.menuTaskId !== null || state.editingTaskId !== null)) {
+    state.menuTaskId = null;
+    state.editingTaskId = null;
+    render();
   }
 }
 
@@ -268,6 +356,25 @@ function formatDueDate(dueDate) {
     month: "short",
     day: "numeric",
   }).format(date);
+}
+
+function getEasternDateKey() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  if (!year || !month || !day) {
+    return "";
+  }
+
+  return `${year}-${month}-${day}`;
 }
 
 async function api(url, options = {}) {

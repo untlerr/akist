@@ -65,7 +65,15 @@ h2 {
 }
 
 .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
   margin-bottom: 24px;
+}
+
+.topbar-actions {
+  width: min(280px, 100%);
 }
 
 .date-line {
@@ -98,10 +106,6 @@ h2 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 170px auto;
   gap: 10px;
-}
-
-.toolbar {
-  display: grid;
 }
 
 input {
@@ -187,6 +191,18 @@ input:focus {
   gap: 12px;
 }
 
+.task-edit-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px auto;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.task-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .task-meta {
   display: inline-flex;
   align-items: center;
@@ -228,9 +244,12 @@ input:focus {
 .task-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
+  position: relative;
 }
 
-.task-action {
+.task-action,
+.task-menu-item {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: transparent;
@@ -238,8 +257,69 @@ input:focus {
   padding: 8px 10px;
 }
 
-.task-action.danger {
+.task-action.danger,
+.task-menu-item.danger {
   color: var(--danger);
+}
+
+.pin-button,
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+}
+
+.pin-button svg,
+.menu-button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.pin-button.is-pinned {
+  color: #b8d8d4;
+  border-color: rgba(122, 166, 161, 0.34);
+  background: rgba(122, 166, 161, 0.12);
+}
+
+.task-menu-wrap {
+  position: relative;
+}
+
+.task-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 120px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #1b1f22;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 6px;
+  z-index: 2;
+}
+
+.task-menu-item {
+  width: 100%;
+  text-align: left;
+  border-radius: 10px;
+}
+
+.task-menu-item:hover,
+.task-action:hover,
+.pin-button:hover,
+.menu-button:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
 }
 
 .completed-panel {
@@ -299,7 +379,20 @@ input:focus {
     align-items: start;
   }
 
+  .task-edit-form {
+    grid-template-columns: 1fr;
+  }
+
   .task-meta {
     flex-wrap: wrap;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .topbar-actions {
+    width: 100%;
   }
 }
