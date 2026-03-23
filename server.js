@@ -29,7 +29,7 @@ createServer(async (req, res) => {
     sendJson(res, 500, { error: "Something went wrong on the server." });
   }
 }).listen(PORT, HOST, () => {
-  console.log(`Akist Dayboard running on http://localhost:${PORT}`);
+  console.log(`akist running on http://localhost:${PORT}`);
 
   const lanAddress = getLanAddress();
   if (lanAddress) {
@@ -42,7 +42,7 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/bootstrap") {
     sendJson(res, 200, {
-      appName: "Akist Dayboard",
+      appName: "akist",
       version: "0.1.0",
       lanAddress: getLanAddress(),
       todayKey: getTodayKey(),
@@ -162,35 +162,7 @@ async function writeDatabase(db) {
 }
 
 function starterTasks() {
-  return [
-    normalizeTask({
-      title: "Map the day in 3 outcomes",
-      notes: "Define the three results that would make today feel like a win.",
-      duration: 15,
-      energy: "light",
-      urgency: "today",
-      lane: "focus",
-      slot: "morning",
-    }),
-    normalizeTask({
-      title: "Protect one deep work block",
-      notes: "Choose one meaningful task worth an uninterrupted hour.",
-      duration: 60,
-      energy: "deep",
-      urgency: "today",
-      lane: "focus",
-      slot: "morning",
-    }),
-    normalizeTask({
-      title: "Clear one admin drag",
-      notes: "Handle a message, form, bill, or loose end that keeps hanging around.",
-      duration: 30,
-      energy: "steady",
-      urgency: "soon",
-      lane: "admin",
-      slot: "afternoon",
-    }),
-  ];
+  return [];
 }
 
 function normalizeTask(input) {
