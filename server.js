@@ -166,6 +166,7 @@ function normalizeTask(input) {
     id: String(input.id || randomUUID()),
     title: String(input.title || "").trim(),
     dueDate: sanitizeDueDate(input.dueDate),
+    pinned: Boolean(input.pinned),
     done: Boolean(input.done),
     createdAt: input.createdAt || new Date().toISOString(),
     completedAt: input.completedAt || null,
@@ -177,6 +178,7 @@ function sanitizeTaskPatch(input) {
   return {
     ...(input.title !== undefined ? { title: String(input.title).trim() } : {}),
     ...(input.dueDate !== undefined ? { dueDate: sanitizeDueDate(input.dueDate) } : {}),
+    ...(input.pinned !== undefined ? { pinned: Boolean(input.pinned) } : {}),
     ...(input.done !== undefined ? { done: Boolean(input.done) } : {}),
     ...(input.dayKey !== undefined ? { dayKey: String(input.dayKey) } : {}),
   };

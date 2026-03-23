@@ -7,8 +7,8 @@
   --line-strong: rgba(255, 255, 255, 0.14);
   --text: #f3efe9;
   --muted: #9ea5ad;
-  --accent: #d27d58;
-  --accent-strong: #b86643;
+  --accent: #7aa6a1;
+  --accent-strong: #5c8480;
   --danger: #d17979;
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
   --radius-lg: 22px;
@@ -28,7 +28,7 @@ body {
   font-family: "Space Grotesk", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top, rgba(210, 125, 88, 0.1), transparent 32%),
+    radial-gradient(circle at top, rgba(122, 166, 161, 0.12), transparent 32%),
     linear-gradient(180deg, #101214 0%, #14171a 100%);
 }
 
@@ -44,16 +44,18 @@ button {
 h1,
 h2 {
   margin: 0;
-  font-family: "Fraunces", serif;
-  font-weight: 600;
+  font-family: "Space Grotesk", sans-serif;
 }
 
 h1 {
   font-size: clamp(2.2rem, 6vw, 3.4rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
 }
 
 h2 {
   font-size: 1.02rem;
+  font-weight: 500;
 }
 
 .app-shell {
@@ -69,6 +71,10 @@ h2 {
 .date-line {
   margin: 10px 0 0;
   color: var(--muted);
+}
+
+.date-separator {
+  margin: 0 8px;
 }
 
 .main-column {
@@ -181,14 +187,34 @@ input:focus {
   gap: 12px;
 }
 
+.task-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .task-title {
   overflow-wrap: anywhere;
 }
 
+.task-pin,
 .task-date {
   color: var(--muted);
   font-size: 0.9rem;
   white-space: nowrap;
+}
+
+.task-pin {
+  display: none;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(122, 166, 161, 0.14);
+  color: #b8d8d4;
+  font-size: 0.78rem;
+}
+
+.task-pin.is-visible {
+  display: inline-flex;
 }
 
 .task-date.is-overdue {
@@ -196,7 +222,7 @@ input:focus {
 }
 
 .task-date.is-today {
-  color: #f0c17d;
+  color: #a8d1cc;
 }
 
 .task-actions {
@@ -271,5 +297,9 @@ input:focus {
   .task-row {
     flex-direction: column;
     align-items: start;
+  }
+
+  .task-meta {
+    flex-wrap: wrap;
   }
 }

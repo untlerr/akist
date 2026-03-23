@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
@@ -18,7 +18,11 @@
       <header class="topbar">
         <div>
           <h1>akist</h1>
-          <p class="date-line" id="todayLabel"></p>
+          <p class="date-line">
+            <span id="todayLabel"></span>
+            <span class="date-separator">·</span>
+            <span id="timeLabel"></span>
+          </p>
         </div>
       </header>
 
@@ -53,7 +57,7 @@
 
         <section class="completed-panel">
           <button id="toggleCompletedBtn" class="completed-toggle" type="button">
-            completed
+            Completed
             <span id="completedCount">0</span>
           </button>
           <div id="completedList" class="task-list is-hidden"></div>
@@ -67,10 +71,14 @@
         <div class="task-card-main">
           <div class="task-row">
             <h2 class="task-title"></h2>
-            <span class="task-date"></span>
+            <div class="task-meta">
+              <span class="task-pin"></span>
+              <span class="task-date"></span>
+            </div>
           </div>
         </div>
         <div class="task-actions">
+          <button class="task-action" data-action="toggle-pin" type="button">Pin</button>
           <button class="task-action danger" data-action="delete-task" type="button">Delete</button>
         </div>
       </article>

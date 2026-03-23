@@ -1,5 +1,6 @@
 const els = {
   todayLabel: document.querySelector("#todayLabel"),
+  timeLabel: document.querySelector("#timeLabel"),
   taskForm: document.querySelector("#taskForm"),
   taskTitle: document.querySelector("#taskTitle"),
   taskDueDate: document.querySelector("#taskDueDate"),
@@ -22,7 +23,8 @@ init();
 
 async function init() {
   bindEvents();
-  renderDate();
+  renderDateTime();
+  window.setInterval(renderDateTime, 30000);
 
   try {
     const bootstrap = await api("/api/bootstrap");
@@ -43,12 +45,19 @@ function bindEvents() {
   document.addEventListener("keydown", handleShortcuts);
 }
 
-function renderDate() {
+function renderDateTime() {
   const now = new Date();
   els.todayLabel.textContent = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
+  }).format(now);
+
+  els.timeLabel.textContent = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/New_York",
+    timeZoneName: "short",
   }).format(now);
 }
 
@@ -96,6 +105,7 @@ function createTaskCard(task) {
   node.querySelector(".task-title").textContent = task.title;
 
   const dateEl = node.querySelector(".task-date");
+  const pinEl = node.querySelector(".task-pin");
   if (task.dueDate) {
     dateEl.textContent = formatDueDate(task.dueDate);
     dateEl.classList.toggle("is-overdue", isOverdue(task));
@@ -104,7 +114,13 @@ function createTaskCard(task) {
     dateEl.textContent = "";
   }
 
-  const deleteButton = node.querySelector(".task-action");
+  pinEl.textContent = "Pinned";
+  pinEl.classList.toggle("is-visible", Boolean(task.pinned));
+
+  const [pinButton, deleteButton] = node.querySelectorAll(".task-action");
+  pinButton.dataset.action = "toggle-pin";
+  pinButton.dataset.id = task.id;
+  pinButton.textContent = task.pinned ? "Unpin" : "Pin";
   deleteButton.dataset.action = "delete-task";
   deleteButton.dataset.id = task.id;
 
@@ -166,6 +182,16 @@ async function handleTaskAction(event) {
     return;
   }
 
+  if (action === "toggle-pin") {
+    const response = await api(`/api/tasks/${taskId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ pinned: !task.pinned }),
+    });
+    replaceTask(response.task);
+    render();
+    return;
+  }
+
   if (action === "toggle-done") {
     const response = await api(`/api/tasks/${taskId}`, {
       method: "PATCH",
@@ -203,6 +229,10 @@ function getVisibleTasks() {
 }
 
 function sortActiveTasks(a, b) {
+  if (Boolean(a.pinned) !== Boolean(b.pinned)) {
+    return a.pinned ? -1 : 1;
+  }
+
   if (a.dueDate && b.dueDate) {
     return a.dueDate.localeCompare(b.dueDate) || new Date(b.createdAt) - new Date(a.createdAt);
   }
