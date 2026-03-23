@@ -5,6 +5,8 @@ const els = {
   searchToggleBtn: document.querySelector("#searchToggleBtn"),
   taskForm: document.querySelector("#taskForm"),
   taskTitle: document.querySelector("#taskTitle"),
+  taskDueDateShell: document.querySelector("#taskDueDateShell"),
+  taskDueDateLabel: document.querySelector("#taskDueDateLabel"),
   taskDueDate: document.querySelector("#taskDueDate"),
   searchInput: document.querySelector("#searchInput"),
   taskList: document.querySelector("#taskList"),
@@ -34,6 +36,7 @@ async function init() {
     const bootstrap = await api("/api/bootstrap");
     state.tasks = Array.isArray(bootstrap.data.tasks) ? bootstrap.data.tasks : [];
     state.todayKey = getEasternDateKey() || bootstrap.todayKey;
+    syncComposerDate();
     render();
   } catch (error) {
     console.error(error);
@@ -43,11 +46,14 @@ async function init() {
 
 function bindEvents() {
   els.taskForm.addEventListener("submit", handleTaskSubmit);
+  els.taskDueDate.addEventListener("input", syncComposerDate);
+  els.taskDueDate.addEventListener("change", syncComposerDate);
   els.searchInput.addEventListener("input", handleSearch);
   els.searchInput.addEventListener("blur", handleSearchBlur);
   els.searchToggleBtn.addEventListener("click", toggleSearch);
   els.toggleCompletedBtn.addEventListener("click", toggleCompleted);
   document.addEventListener("click", handleTaskAction);
+  document.addEventListener("input", handleDynamicDateInput);
   document.addEventListener("submit", handleTaskFormActions);
   document.addEventListener("keydown", handleShortcuts);
 }
@@ -136,7 +142,11 @@ function createTaskCard(task) {
   editForm.classList.toggle("is-hidden", state.editingTaskId !== task.id);
   editForm.dataset.id = task.id;
   editForm.querySelector(".task-edit-title").value = task.title;
-  editForm.querySelector(".task-edit-date").value = task.dueDate || "";
+  const editDateInput = editForm.querySelector(".task-edit-date-input");
+  const editDateShell = editForm.querySelector(".task-edit-date-shell");
+  const editDateLabel = editForm.querySelector(".task-edit-date-label");
+  editDateInput.value = task.dueDate || "";
+  syncDateShell(editDateShell, editDateLabel, editDateInput.value);
 
   const pinButton = node.querySelector(".pin-button");
   pinButton.dataset.action = "toggle-pin";
@@ -154,6 +164,8 @@ function createTaskCard(task) {
   menuItems.forEach((item) => {
     item.dataset.id = task.id;
   });
+
+  node.querySelector(".task-cancel").dataset.id = task.id;
 
   return node;
 }
@@ -178,6 +190,7 @@ async function handleTaskSubmit(event) {
 
   state.tasks.unshift(response.task);
   els.taskForm.reset();
+  syncComposerDate();
   render();
   els.taskTitle.focus();
 }
@@ -186,6 +199,10 @@ function handleSearch(event) {
   state.search = event.target.value.trim().toLowerCase();
   syncSearchState();
   render();
+}
+
+function syncComposerDate() {
+  syncDateShell(els.taskDueDateShell, els.taskDueDateLabel, els.taskDueDate.value);
 }
 
 function toggleSearch() {
@@ -298,7 +315,7 @@ async function handleTaskFormActions(event) {
   event.preventDefault();
   const taskId = form.dataset.id;
   const title = form.querySelector(".task-edit-title").value.trim();
-  const dueDate = form.querySelector(".task-edit-date").value || null;
+  const dueDate = form.querySelector(".task-edit-date-input").value || null;
 
   if (!title) {
     return;
@@ -312,6 +329,24 @@ async function handleTaskFormActions(event) {
   replaceTask(response.task);
   state.editingTaskId = null;
   render();
+}
+
+function handleDynamicDateInput(event) {
+  const input = event.target.closest(".task-edit-date-input");
+  if (!input) {
+    return;
+  }
+
+  const form = input.closest(".task-edit-form");
+  if (!form) {
+    return;
+  }
+
+  syncDateShell(
+    form.querySelector(".task-edit-date-shell"),
+    form.querySelector(".task-edit-date-label"),
+    input.value
+  );
 }
 
 function handleShortcuts(event) {
@@ -387,6 +422,12 @@ function formatDueDate(dueDate) {
     month: "short",
     day: "numeric",
   }).format(date);
+}
+
+function syncDateShell(shell, label, value) {
+  const hasValue = Boolean(value);
+  shell.classList.toggle("has-value", hasValue);
+  label.textContent = hasValue ? formatDueDate(value) : "";
 }
 
 function getEasternDateKey() {

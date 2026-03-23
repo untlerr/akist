@@ -28,9 +28,8 @@
           <div id="searchWrap" class="search-shell">
             <button id="searchToggleBtn" class="search-toggle" type="button" aria-label="Open search">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M10.5 4.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm0-2a8 8 0 1 1 4.9 14.3l5.1 5.1-1.4 1.4-5.1-5.1A8 8 0 0 1 10.5 2.5Z"
-                />
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="M16 16l4.5 4.5" />
               </svg>
             </button>
             <input
@@ -55,7 +54,15 @@
               maxlength="120"
               required
             />
-            <input id="taskDueDate" name="dueDate" type="date" aria-label="Due date" />
+            <label id="taskDueDateShell" class="date-shell" aria-label="Due date">
+              <span class="date-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 3.5v3M17 3.5v3M4.5 8.5h15M6 5.5h12a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V7A1.5 1.5 0 0 1 6 5.5Z" />
+                </svg>
+              </span>
+              <span id="taskDueDateLabel" class="date-label"></span>
+              <input id="taskDueDate" name="dueDate" class="date-native-input" type="date" aria-label="Due date" />
+            </label>
             <button class="button button-primary add-button" type="submit" aria-label="Add task">+</button>
           </form>
         </section>
@@ -87,7 +94,15 @@
           </div>
           <form class="task-edit-form is-hidden">
             <input class="task-edit-title" type="text" maxlength="120" aria-label="Edit task title" />
-            <input class="task-edit-date" type="date" aria-label="Edit due date" />
+            <label class="date-shell task-edit-date-shell" aria-label="Edit due date">
+              <span class="date-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 3.5v3M17 3.5v3M4.5 8.5h15M6 5.5h12a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V7A1.5 1.5 0 0 1 6 5.5Z" />
+                </svg>
+              </span>
+              <span class="date-label task-edit-date-label"></span>
+              <input class="task-edit-date-input date-native-input" type="date" aria-label="Edit due date" />
+            </label>
             <div class="task-edit-actions">
               <button class="task-save button button-primary" data-action="save-edit" type="submit">Save</button>
               <button class="task-cancel task-action" data-action="cancel-edit" type="button">Cancel</button>
