@@ -1,6 +1,8 @@
 const els = {
   todayLabel: document.querySelector("#todayLabel"),
   timeLabel: document.querySelector("#timeLabel"),
+  searchWrap: document.querySelector("#searchWrap"),
+  searchToggleBtn: document.querySelector("#searchToggleBtn"),
   taskForm: document.querySelector("#taskForm"),
   taskTitle: document.querySelector("#taskTitle"),
   taskDueDate: document.querySelector("#taskDueDate"),
@@ -42,6 +44,8 @@ async function init() {
 function bindEvents() {
   els.taskForm.addEventListener("submit", handleTaskSubmit);
   els.searchInput.addEventListener("input", handleSearch);
+  els.searchInput.addEventListener("blur", handleSearchBlur);
+  els.searchToggleBtn.addEventListener("click", toggleSearch);
   els.toggleCompletedBtn.addEventListener("click", toggleCompleted);
   document.addEventListener("click", handleTaskAction);
   document.addEventListener("submit", handleTaskFormActions);
@@ -180,7 +184,33 @@ async function handleTaskSubmit(event) {
 
 function handleSearch(event) {
   state.search = event.target.value.trim().toLowerCase();
+  syncSearchState();
   render();
+}
+
+function toggleSearch() {
+  const nextOpen = !els.searchWrap.classList.contains("is-open");
+
+  if (nextOpen) {
+    els.searchWrap.classList.add("is-open");
+    window.setTimeout(() => els.searchInput.focus(), 140);
+  } else {
+    state.search = "";
+    els.searchInput.value = "";
+    els.searchWrap.classList.remove("is-open");
+    els.searchInput.blur();
+    render();
+  }
+}
+
+function handleSearchBlur() {
+  if (!state.search) {
+    els.searchWrap.classList.remove("is-open");
+  }
+}
+
+function syncSearchState() {
+  els.searchWrap.classList.toggle("is-open", Boolean(state.search));
 }
 
 function toggleCompleted() {
@@ -295,6 +325,7 @@ function handleShortcuts(event) {
 
   if (!typing && event.key === "/") {
     event.preventDefault();
+    els.searchWrap.classList.add("is-open");
     els.searchInput.focus();
   }
 

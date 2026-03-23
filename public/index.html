@@ -25,12 +25,22 @@
           </p>
         </div>
         <div class="topbar-actions">
-          <input
-            id="searchInput"
-            type="search"
-            placeholder="Search"
-            aria-label="Search tasks"
-          />
+          <div id="searchWrap" class="search-shell">
+            <button id="searchToggleBtn" class="search-toggle" type="button" aria-label="Open search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M10.5 4.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm0-2a8 8 0 1 1 4.9 14.3l5.1 5.1-1.4 1.4-5.1-5.1A8 8 0 0 1 10.5 2.5Z"
+                />
+              </svg>
+            </button>
+            <input
+              id="searchInput"
+              class="search-input"
+              type="search"
+              placeholder="Search"
+              aria-label="Search tasks"
+            />
+          </div>
         </div>
       </header>
 
@@ -46,7 +56,7 @@
               required
             />
             <input id="taskDueDate" name="dueDate" type="date" aria-label="Due date" />
-            <button class="button button-primary" type="submit">Add</button>
+            <button class="button button-primary add-button" type="submit" aria-label="Add task">+</button>
           </form>
         </section>
 
