@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>akist</title>
-    <meta name="description" content="Simple local task planning." />
+    <meta name="description" content="Minimal personal to do list." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,150 +16,63 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <h1>akist</h1>
-
-        <div class="topbar-actions">
-          <div class="date-card">
-            <strong id="todayLabel"></strong>
-            <span id="timeLabel" class="muted"></span>
-          </div>
-          <button id="autoPlanBtn" class="button button-primary" type="button">
-            Auto-plan
-          </button>
+        <div>
+          <h1>akist</h1>
+          <p class="date-line" id="todayLabel"></p>
         </div>
       </header>
 
-      <main class="layout">
-        <aside class="panel sidebar">
+      <main class="main-column">
+        <section class="panel composer">
           <form id="taskForm" class="task-form">
             <input
               id="taskTitle"
               name="title"
               type="text"
               placeholder="Add a task"
-              maxlength="80"
+              maxlength="120"
               required
             />
-
-            <textarea
-              id="taskNotes"
-              name="notes"
-              rows="3"
-              placeholder="Notes"
-              maxlength="220"
-            ></textarea>
-
-            <div class="field-grid">
-              <select id="taskDuration" name="duration" aria-label="Duration">
-                <option value="15">15 min</option>
-                <option value="30" selected>30 min</option>
-                <option value="45">45 min</option>
-                <option value="60">60 min</option>
-                <option value="90">90 min</option>
-              </select>
-
-              <select id="taskEnergy" name="energy" aria-label="Energy">
-                <option value="light">Light</option>
-                <option value="steady" selected>Steady</option>
-                <option value="deep">Deep</option>
-              </select>
-            </div>
-
-            <div class="field-grid">
-              <select id="taskUrgency" name="urgency" aria-label="Urgency">
-                <option value="today" selected>Today</option>
-                <option value="soon">Soon</option>
-                <option value="someday">Someday</option>
-              </select>
-
-              <select id="taskLane" name="lane" aria-label="List">
-                <option value="inbox" selected>Inbox</option>
-                <option value="focus">Focus</option>
-                <option value="personal">Personal</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-
-            <button class="button button-primary button-block" type="submit">
-              Add
-            </button>
+            <input id="taskDueDate" name="dueDate" type="date" aria-label="Due date" />
+            <button class="button button-primary" type="submit">Add</button>
           </form>
-        </aside>
+        </section>
 
-        <section class="main-column">
-          <section class="panel toolbar">
-            <input
-              id="searchInput"
-              type="search"
-              placeholder="Search"
-              aria-label="Search tasks"
-            />
+        <section class="toolbar">
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Search"
+            aria-label="Search tasks"
+          />
+        </section>
 
-            <div class="filter-chips" id="filterChips">
-              <button class="chip is-active" data-filter="all" type="button">All</button>
-              <button class="chip" data-filter="focus" type="button">Focus</button>
-              <button class="chip" data-filter="quick" type="button">Quick</button>
-              <button class="chip" data-filter="deep" type="button">Deep</button>
-              <button class="chip" data-filter="carryover" type="button">Carryover</button>
-            </div>
+        <section class="panel list-panel">
+          <div id="taskList" class="task-list"></div>
+        </section>
 
-            <div class="stats-strip">
-              <div class="stat">
-                <span>Open</span>
-                <strong id="openCount">0</strong>
-              </div>
-              <div class="stat">
-                <span>Done</span>
-                <strong id="doneCount">0</strong>
-              </div>
-              <div class="stat">
-                <span>Minutes</span>
-                <strong id="plannedMinutes">0</strong>
-              </div>
-            </div>
-          </section>
-
-          <section class="board-grid">
-            <article class="panel board-column">
-              <div class="column-heading">
-                <h2>focus</h2>
-                <span id="focusCountBadge" class="count-badge">0</span>
-              </div>
-              <div id="focusList" class="task-list"></div>
-            </article>
-
-            <article class="panel board-column">
-              <div class="column-heading">
-                <h2>inbox</h2>
-                <span id="inboxCountBadge" class="count-badge">0</span>
-              </div>
-              <div id="inboxList" class="task-list"></div>
-            </article>
-
-            <article class="panel board-column">
-              <div class="column-heading">
-                <h2>done</h2>
-                <span id="doneCountBadge" class="count-badge">0</span>
-              </div>
-              <div id="doneList" class="task-list"></div>
-            </article>
-          </section>
+        <section class="completed-panel">
+          <button id="toggleCompletedBtn" class="completed-toggle" type="button">
+            completed
+            <span id="completedCount">0</span>
+          </button>
+          <div id="completedList" class="task-list is-hidden"></div>
         </section>
       </main>
     </div>
 
     <template id="taskCardTemplate">
       <article class="task-card">
+        <button class="check-button" data-action="toggle-done" type="button" aria-label="Toggle complete"></button>
         <div class="task-card-main">
-          <div class="task-meta-row">
-            <span class="task-chip"></span>
-            <span class="task-chip"></span>
-            <span class="task-chip"></span>
+          <div class="task-row">
+            <h2 class="task-title"></h2>
+            <span class="task-date"></span>
           </div>
-          <h3 class="task-title"></h3>
-          <p class="task-notes"></p>
         </div>
-        <div class="task-actions"></div>
+        <div class="task-actions">
+          <button class="task-action danger" data-action="delete-task" type="button">Delete</button>
+        </div>
       </article>
     </template>
 

@@ -81,13 +81,9 @@ async function handleApi(req, res, url) {
     Object.assign(task, sanitizeTaskPatch(body));
     if (body.done === true) {
       task.completedAt = new Date().toISOString();
-      task.lane = "done";
     }
     if (body.done === false) {
       task.completedAt = null;
-      if (task.lane === "done") {
-        task.lane = "inbox";
-      }
     }
 
     await writeDatabase(db);
@@ -169,12 +165,7 @@ function normalizeTask(input) {
   return {
     id: String(input.id || randomUUID()),
     title: String(input.title || "").trim(),
-    notes: String(input.notes || "").trim(),
-    duration: Number(input.duration || 30),
-    energy: oneOf(input.energy, ["light", "steady", "deep"], "steady"),
-    urgency: oneOf(input.urgency, ["today", "soon", "someday"], "today"),
-    lane: oneOf(input.lane, ["inbox", "focus", "personal", "admin", "done"], "inbox"),
-    slot: oneOf(input.slot, ["morning", "afternoon", "evening", "flex"], "flex"),
+    dueDate: sanitizeDueDate(input.dueDate),
     done: Boolean(input.done),
     createdAt: input.createdAt || new Date().toISOString(),
     completedAt: input.completedAt || null,
@@ -185,12 +176,7 @@ function normalizeTask(input) {
 function sanitizeTaskPatch(input) {
   return {
     ...(input.title !== undefined ? { title: String(input.title).trim() } : {}),
-    ...(input.notes !== undefined ? { notes: String(input.notes).trim() } : {}),
-    ...(input.duration !== undefined ? { duration: Number(input.duration) || 30 } : {}),
-    ...(input.energy !== undefined ? { energy: oneOf(input.energy, ["light", "steady", "deep"], "steady") } : {}),
-    ...(input.urgency !== undefined ? { urgency: oneOf(input.urgency, ["today", "soon", "someday"], "today") } : {}),
-    ...(input.lane !== undefined ? { lane: oneOf(input.lane, ["inbox", "focus", "personal", "admin", "done"], "inbox") } : {}),
-    ...(input.slot !== undefined ? { slot: oneOf(input.slot, ["morning", "afternoon", "evening", "flex"], "flex") } : {}),
+    ...(input.dueDate !== undefined ? { dueDate: sanitizeDueDate(input.dueDate) } : {}),
     ...(input.done !== undefined ? { done: Boolean(input.done) } : {}),
     ...(input.dayKey !== undefined ? { dayKey: String(input.dayKey) } : {}),
   };
@@ -267,4 +253,13 @@ function oneOf(value, allowed, fallback) {
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function sanitizeDueDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  const stringValue = String(value);
+  return /^\d{4}-\d{2}-\d{2}$/.test(stringValue) ? stringValue : null;
 }
