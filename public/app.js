@@ -52,6 +52,7 @@ function bindEvents() {
   els.searchInput.addEventListener("blur", handleSearchBlur);
   els.searchToggleBtn.addEventListener("click", toggleSearch);
   els.toggleCompletedBtn.addEventListener("click", toggleCompleted);
+  document.addEventListener("click", handleDateShellClick);
   document.addEventListener("click", handleTaskAction);
   document.addEventListener("input", handleDynamicDateInput);
   document.addEventListener("submit", handleTaskFormActions);
@@ -199,6 +200,23 @@ function handleSearch(event) {
   state.search = event.target.value.trim().toLowerCase();
   syncSearchState();
   render();
+}
+
+function handleDateShellClick(event) {
+  const shell = event.target.closest(".date-shell");
+  if (!shell) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const input = shell.querySelector('input[type="date"]');
+  if (!input) {
+    return;
+  }
+
+  openDatePicker(input);
 }
 
 function syncComposerDate() {
@@ -418,9 +436,13 @@ function isToday(dueDate) {
 function formatDueDate(dueDate) {
   const parts = dueDate.split("-");
   const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  const currentYear = state.todayKey ? Number(state.todayKey.slice(0, 4)) : null;
+  const dueYear = Number(parts[0]);
+
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
+    ...(currentYear && dueYear !== currentYear ? { year: "numeric" } : {}),
   }).format(date);
 }
 
@@ -428,6 +450,16 @@ function syncDateShell(shell, label, value) {
   const hasValue = Boolean(value);
   shell.classList.toggle("has-value", hasValue);
   label.textContent = hasValue ? formatDueDate(value) : "";
+}
+
+function openDatePicker(input) {
+  if (typeof input.showPicker === "function") {
+    input.showPicker();
+    return;
+  }
+
+  input.focus();
+  input.click();
 }
 
 function getEasternDateKey() {
