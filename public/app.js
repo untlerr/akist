@@ -452,6 +452,7 @@ function syncDateShell(shell, label, value) {
   shell.classList.toggle("has-value", hasValue);
   shell.classList.toggle("has-year", hasValue && formatted.includes(","));
   label.textContent = formatted;
+  shell.style.width = hasValue ? `${measureDateShellWidth(label, formatted)}px` : "44px";
 }
 
 function openDatePicker(input) {
@@ -481,6 +482,21 @@ function getEasternDateKey() {
   }
 
   return `${year}-${month}-${day}`;
+}
+
+function measureDateShellWidth(label, text) {
+  const computed = window.getComputedStyle(label);
+  const canvas = measureDateShellWidth.canvas || (measureDateShellWidth.canvas = document.createElement("canvas"));
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    return text.includes(",") ? 132 : 102;
+  }
+
+  context.font = `${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`;
+  const textWidth = context.measureText(text).width;
+
+  return Math.ceil(textWidth + 18 + 10 + 24 + 6);
 }
 
 async function api(url, options = {}) {

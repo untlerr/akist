@@ -234,14 +234,6 @@ input:focus {
     border-color 180ms ease;
 }
 
-.date-shell.has-value {
-  width: 96px;
-}
-
-.date-shell.has-value.has-year {
-  width: 148px;
-}
-
 .date-icon {
   display: inline-flex;
   align-items: center;
