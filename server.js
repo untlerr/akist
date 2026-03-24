@@ -91,6 +91,7 @@ async function handleApi(req, res, url) {
     }
 
     Object.assign(task, sanitizeTaskPatch(body));
+    applyReminderState(task);
     if (body.done === true) {
       task.completedAt = new Date().toISOString();
     }
@@ -174,12 +175,16 @@ function starterTasks() {
 }
 
 function normalizeTask(input) {
+  const reminderFields = normalizeReminderFields(input);
   const task = {
     id: String(input.id || randomUUID()),
     title: String(input.title || "").trim(),
     dueDate: sanitizeDueDate(input.dueDate),
     pinned: Boolean(input.pinned),
-    reminderPreset: sanitizeReminderPreset(input.reminderPreset),
+    reminderType: reminderFields.reminderType,
+    reminderDaysBefore: reminderFields.reminderDaysBefore,
+    reminderDate: reminderFields.reminderDate,
+    reminderTime: reminderFields.reminderTime,
     reminderAt: input.reminderAt || null,
     reminderSentAt: input.reminderSentAt || null,
     done: Boolean(input.done),
@@ -195,7 +200,7 @@ function sanitizeTaskPatch(input) {
     ...(input.title !== undefined ? { title: String(input.title).trim() } : {}),
     ...(input.dueDate !== undefined ? { dueDate: sanitizeDueDate(input.dueDate) } : {}),
     ...(input.pinned !== undefined ? { pinned: Boolean(input.pinned) } : {}),
-    ...(input.reminderPreset !== undefined ? { reminderPreset: sanitizeReminderPreset(input.reminderPreset) } : {}),
+    ...sanitizeReminderPatch(input),
     ...(input.done !== undefined ? { done: Boolean(input.done) } : {}),
     ...(input.dayKey !== undefined ? { dayKey: String(input.dayKey) } : {}),
   };
@@ -283,17 +288,91 @@ function sanitizeDueDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(stringValue) ? stringValue : null;
 }
 
-function sanitizeReminderPreset(value) {
-  return oneOf(value, ["none", "day-of-0900", "day-before-1800"], "none");
+function normalizeReminderFields(input) {
+  if (
+    input.reminderType !== undefined ||
+    input.reminderDaysBefore !== undefined ||
+    input.reminderDate !== undefined ||
+    input.reminderTime !== undefined
+  ) {
+    return {
+      reminderType: sanitizeReminderType(input.reminderType),
+      reminderDaysBefore: sanitizeReminderDaysBefore(input.reminderDaysBefore),
+      reminderDate: sanitizeDueDate(input.reminderDate),
+      reminderTime: sanitizeReminderTime(input.reminderTime),
+    };
+  }
+
+  if (input.reminderPreset === "day-before-1800") {
+    return {
+      reminderType: "days-before",
+      reminderDaysBefore: 1,
+      reminderDate: null,
+      reminderTime: "18:00",
+    };
+  }
+
+  if (input.reminderPreset === "day-of-0900") {
+    return {
+      reminderType: "day-of",
+      reminderDaysBefore: 1,
+      reminderDate: null,
+      reminderTime: "09:00",
+    };
+  }
+
+  return {
+    reminderType: "none",
+    reminderDaysBefore: 1,
+    reminderDate: null,
+    reminderTime: "09:00",
+  };
+}
+
+function sanitizeReminderPatch(input) {
+  if (
+    input.reminderType === undefined &&
+    input.reminderDaysBefore === undefined &&
+    input.reminderDate === undefined &&
+    input.reminderTime === undefined &&
+    input.reminderPreset === undefined
+  ) {
+    return {};
+  }
+
+  const normalized = normalizeReminderFields(input);
+  return {
+    reminderType: normalized.reminderType,
+    reminderDaysBefore: normalized.reminderDaysBefore,
+    reminderDate: normalized.reminderDate,
+    reminderTime: normalized.reminderTime,
+  };
+}
+
+function sanitizeReminderType(value) {
+  return oneOf(value, ["none", "day-of", "days-before", "specific-date"], "none");
+}
+
+function sanitizeReminderDaysBefore(value) {
+  const numberValue = Number(value || 1);
+  return Number.isFinite(numberValue) ? Math.min(30, Math.max(1, Math.round(numberValue))) : 1;
+}
+
+function sanitizeReminderTime(value) {
+  const stringValue = String(value || "09:00");
+  return /^\d{2}:\d{2}$/.test(stringValue) ? stringValue : "09:00";
 }
 
 function applyReminderState(task) {
-  const nextReminderAt = computeReminderAt(task.dueDate, task.reminderPreset);
+  const nextReminderAt = computeReminderAt(task);
   const reminderChanged = nextReminderAt !== task.reminderAt;
 
   task.reminderAt = nextReminderAt;
   if (!task.reminderAt) {
-    task.reminderPreset = "none";
+    task.reminderType = "none";
+    task.reminderDaysBefore = 1;
+    task.reminderDate = null;
+    task.reminderTime = "09:00";
     task.reminderSentAt = null;
     return task;
   }
@@ -305,21 +384,26 @@ function applyReminderState(task) {
   return task;
 }
 
-function computeReminderAt(dueDate, reminderPreset) {
-  if (!dueDate || reminderPreset === "none") {
+function computeReminderAt(task) {
+  if (!task.dueDate || task.reminderType === "none") {
     return null;
   }
 
-  const [year, month, day] = dueDate.split("-").map(Number);
-  const reminderDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-
-  if (reminderPreset === "day-before-1800") {
-    reminderDate.setDate(reminderDate.getDate() - 1);
-    reminderDate.setHours(18, 0, 0, 0);
-    return reminderDate.toISOString();
+  const targetDate =
+    task.reminderType === "specific-date" ? sanitizeDueDate(task.reminderDate) : task.dueDate;
+  if (!targetDate) {
+    return null;
   }
 
-  reminderDate.setHours(9, 0, 0, 0);
+  const [year, month, day] = targetDate.split("-").map(Number);
+  const reminderDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+
+  if (task.reminderType === "days-before") {
+    reminderDate.setDate(reminderDate.getDate() - Math.max(1, Number(task.reminderDaysBefore || 1)));
+  }
+
+  const [hours, minutes] = sanitizeReminderTime(task.reminderTime).split(":").map(Number);
+  reminderDate.setHours(hours, minutes, 0, 0);
   return reminderDate.toISOString();
 }
 
@@ -423,7 +507,11 @@ async function sendPushoverReminder(task, config) {
 
 function buildReminderMessage(task) {
   const dueLabel = task.dueDate ? formatDueDate(task.dueDate) : "no due date";
-  return task.pinned ? `important: ${task.title} · due ${dueLabel}` : `${task.title} · due ${dueLabel}`;
+  if (task.pinned) {
+    return `important: ${task.title} - due ${dueLabel}`;
+  }
+
+  return `${task.title} - due ${dueLabel}`;
 }
 
 function formatDueDate(dueDate) {
@@ -435,3 +523,4 @@ function formatDueDate(dueDate) {
     year: "numeric",
   }).format(date);
 }
+

@@ -8,7 +8,14 @@ const els = {
   taskDueDateShell: document.querySelector("#taskDueDateShell"),
   taskDueDateLabel: document.querySelector("#taskDueDateLabel"),
   taskDueDate: document.querySelector("#taskDueDate"),
-  taskReminderPreset: document.querySelector("#taskReminderPreset"),
+  taskReminderToggleBtn: document.querySelector("#taskReminderToggleBtn"),
+  taskReminderEditor: document.querySelector("#taskReminderEditor"),
+  taskReminderType: document.querySelector("#taskReminderType"),
+  taskReminderDaysBefore: document.querySelector("#taskReminderDaysBefore"),
+  taskReminderDateShell: document.querySelector("#taskReminderDateShell"),
+  taskReminderDateLabel: document.querySelector("#taskReminderDateLabel"),
+  taskReminderDate: document.querySelector("#taskReminderDate"),
+  taskReminderTime: document.querySelector("#taskReminderTime"),
   searchInput: document.querySelector("#searchInput"),
   taskList: document.querySelector("#taskList"),
   completedList: document.querySelector("#completedList"),
@@ -24,6 +31,8 @@ const state = {
   search: "",
   editingTaskId: null,
   menuTaskId: null,
+  composerReminderOpen: false,
+  editingReminderTaskId: null,
 };
 
 init();
@@ -50,8 +59,17 @@ function bindEvents() {
   els.taskForm.addEventListener("submit", handleTaskSubmit);
   els.taskDueDate.addEventListener("input", syncComposerDate);
   els.taskDueDate.addEventListener("change", syncComposerDate);
-  els.taskDueDate.addEventListener("input", syncComposerReminderState);
-  els.taskDueDate.addEventListener("change", syncComposerReminderState);
+  els.taskDueDate.addEventListener("input", handleComposerDueDateChange);
+  els.taskDueDate.addEventListener("change", handleComposerDueDateChange);
+  els.taskReminderToggleBtn.addEventListener("click", toggleComposerReminderEditor);
+  els.taskReminderType.addEventListener("input", syncComposerReminderState);
+  els.taskReminderType.addEventListener("change", syncComposerReminderState);
+  els.taskReminderDaysBefore.addEventListener("input", syncComposerReminderState);
+  els.taskReminderDaysBefore.addEventListener("change", syncComposerReminderState);
+  els.taskReminderDate.addEventListener("input", syncComposerReminderDate);
+  els.taskReminderDate.addEventListener("change", syncComposerReminderDate);
+  els.taskReminderTime.addEventListener("input", syncComposerReminderState);
+  els.taskReminderTime.addEventListener("change", syncComposerReminderState);
   els.searchInput.addEventListener("input", handleSearch);
   els.searchInput.addEventListener("blur", handleSearchBlur);
   els.searchToggleBtn.addEventListener("click", toggleSearch);
@@ -59,6 +77,7 @@ function bindEvents() {
   document.addEventListener("click", handleDateShellClick);
   document.addEventListener("click", handleTaskAction);
   document.addEventListener("input", handleDynamicDateInput);
+  document.addEventListener("change", handleDynamicDateInput);
   document.addEventListener("submit", handleTaskFormActions);
   document.addEventListener("keydown", handleShortcuts);
 }
@@ -148,9 +167,21 @@ function createTaskCard(task) {
   const editDateLabel = editForm.querySelector(".task-edit-date-label");
   editDateInput.value = task.dueDate || "";
   syncDateShell(editDateShell, editDateLabel, editDateInput.value);
-  const editReminderSelect = editForm.querySelector(".task-edit-reminder-select");
-  editReminderSelect.value = task.reminderPreset || "none";
-  syncReminderSelectState(editReminderSelect, editDateInput.value);
+  const editReminderToggle = editForm.querySelector(".task-edit-reminder-toggle");
+  editReminderToggle.dataset.id = task.id;
+  const editReminderType = editForm.querySelector(".task-edit-reminder-type");
+  const editReminderDaysBefore = editForm.querySelector(".task-edit-reminder-days-before");
+  const editReminderDateShell = editForm.querySelector(".task-edit-reminder-date-shell");
+  const editReminderDateLabel = editForm.querySelector(".task-edit-reminder-date-label");
+  const editReminderDate = editForm.querySelector(".task-edit-reminder-date");
+  const editReminderTime = editForm.querySelector(".task-edit-reminder-time");
+
+  editReminderType.value = task.reminderType || "none";
+  editReminderDaysBefore.value = String(task.reminderDaysBefore || 1);
+  editReminderDate.value = task.reminderDate || "";
+  editReminderTime.value = task.reminderTime || "09:00";
+  syncDateShell(editReminderDateShell, editReminderDateLabel, editReminderDate.value);
+  syncTaskEditReminderState(editForm);
 
   const pinButton = node.querySelector(".pin-button");
   pinButton.dataset.action = "toggle-pin";
@@ -177,10 +208,11 @@ function createTaskCard(task) {
 async function handleTaskSubmit(event) {
   event.preventDefault();
 
+  const composerReminder = els.taskDueDate.value ? getComposerReminderConfig() : defaultReminderConfig();
   const payload = {
     title: els.taskTitle.value.trim(),
     dueDate: els.taskDueDate.value || null,
-    reminderPreset: els.taskDueDate.value ? els.taskReminderPreset.value : "none",
+    ...composerReminder,
     dayKey: state.todayKey,
   };
 
@@ -195,6 +227,7 @@ async function handleTaskSubmit(event) {
 
   state.tasks.unshift(response.task);
   els.taskForm.reset();
+  resetComposerReminder();
   syncComposerDate();
   syncComposerReminderState();
   render();
@@ -229,7 +262,54 @@ function syncComposerDate() {
 }
 
 function syncComposerReminderState() {
-  syncReminderSelectState(els.taskReminderPreset, els.taskDueDate.value);
+  const hasDueDate = Boolean(els.taskDueDate.value);
+  const reminder = hasDueDate
+    ? getNormalizedReminderConfig(
+        els.taskDueDate.value,
+        els.taskReminderType,
+        els.taskReminderDaysBefore,
+        els.taskReminderDate,
+        els.taskReminderTime
+      )
+    : defaultReminderConfig();
+  const reminderSet = hasDueDate && isReminderConfigured(reminder);
+
+  els.taskReminderToggleBtn.classList.toggle("is-hidden", !hasDueDate);
+  els.taskReminderToggleBtn.classList.toggle("is-set", reminderSet);
+  els.taskReminderToggleBtn.classList.toggle("is-open", state.composerReminderOpen && hasDueDate);
+  els.taskReminderEditor.classList.toggle("is-hidden", !(state.composerReminderOpen && hasDueDate));
+
+  syncReminderEditorFields(
+    els.taskReminderType,
+    els.taskReminderDaysBefore,
+    els.taskReminderDateShell,
+    els.taskReminderDateLabel,
+    els.taskReminderDate,
+    els.taskReminderTime,
+    hasDueDate
+  );
+}
+
+function handleComposerDueDateChange() {
+  syncComposerDate();
+  if (!els.taskDueDate.value) {
+    resetComposerReminder();
+  }
+  syncComposerReminderState();
+}
+
+function toggleComposerReminderEditor() {
+  if (!els.taskDueDate.value) {
+    return;
+  }
+
+  state.composerReminderOpen = !state.composerReminderOpen;
+  syncComposerReminderState();
+}
+
+function syncComposerReminderDate() {
+  syncDateShell(els.taskReminderDateShell, els.taskReminderDateLabel, els.taskReminderDate.value);
+  syncComposerReminderState();
 }
 
 function toggleSearch() {
@@ -300,12 +380,20 @@ async function handleTaskAction(event) {
 
   if (action === "start-edit") {
     state.editingTaskId = taskId;
+    state.editingReminderTaskId = null;
     render();
     return;
   }
 
   if (action === "cancel-edit") {
     state.editingTaskId = null;
+    state.editingReminderTaskId = null;
+    render();
+    return;
+  }
+
+  if (action === "toggle-edit-reminder") {
+    state.editingReminderTaskId = state.editingReminderTaskId === taskId ? null : taskId;
     render();
     return;
   }
@@ -328,6 +416,7 @@ async function handleTaskAction(event) {
     replaceTask(response.task);
     if (response.task.done && state.editingTaskId === taskId) {
       state.editingTaskId = null;
+      state.editingReminderTaskId = null;
     }
     render();
   }
@@ -343,7 +432,7 @@ async function handleTaskFormActions(event) {
   const taskId = form.dataset.id;
   const title = form.querySelector(".task-edit-title").value.trim();
   const dueDate = form.querySelector(".task-edit-date-input").value || null;
-  const reminderPreset = dueDate ? form.querySelector(".task-edit-reminder-select").value : "none";
+  const reminder = dueDate ? getTaskEditReminderConfig(form) : defaultReminderConfig();
 
   if (!title) {
     return;
@@ -351,35 +440,64 @@ async function handleTaskFormActions(event) {
 
   const response = await api(`/api/tasks/${taskId}`, {
     method: "PATCH",
-    body: JSON.stringify({ title, dueDate, reminderPreset }),
+    body: JSON.stringify({ title, dueDate, ...reminder }),
   });
 
   replaceTask(response.task);
   state.editingTaskId = null;
+  state.editingReminderTaskId = null;
   render();
 }
 
 function handleDynamicDateInput(event) {
-  if (event.target === els.taskDueDate) {
+  if (event.target === els.taskReminderDate) {
+    syncComposerReminderDate();
     return;
   }
 
-  const input = event.target.closest(".task-edit-date-input");
-  if (!input) {
+  const editDateInput = event.target.closest(".task-edit-date-input");
+  if (editDateInput) {
+    const form = editDateInput.closest(".task-edit-form");
+    if (!form) {
+      return;
+    }
+
+    syncDateShell(
+      form.querySelector(".task-edit-date-shell"),
+      form.querySelector(".task-edit-date-label"),
+      editDateInput.value
+    );
+    syncTaskEditReminderState(form);
     return;
   }
 
-  const form = input.closest(".task-edit-form");
-  if (!form) {
+  const editReminderDate = event.target.closest(".task-edit-reminder-date");
+  if (editReminderDate) {
+    const form = editReminderDate.closest(".task-edit-form");
+    if (!form) {
+      return;
+    }
+
+    syncDateShell(
+      form.querySelector(".task-edit-reminder-date-shell"),
+      form.querySelector(".task-edit-reminder-date-label"),
+      editReminderDate.value
+    );
+    syncTaskEditReminderState(form);
     return;
   }
 
-  syncDateShell(
-    form.querySelector(".task-edit-date-shell"),
-    form.querySelector(".task-edit-date-label"),
-    input.value
-  );
-  syncReminderSelectState(form.querySelector(".task-edit-reminder-select"), input.value);
+  const editReminderType = event.target.closest(".task-edit-reminder-type");
+  const editReminderDaysBefore = event.target.closest(".task-edit-reminder-days-before");
+  const editReminderTime = event.target.closest(".task-edit-reminder-time");
+  if (editReminderType || editReminderDaysBefore || editReminderTime) {
+    const form = event.target.closest(".task-edit-form");
+    if (!form) {
+      return;
+    }
+
+    syncTaskEditReminderState(form);
+  }
 }
 
 function handleShortcuts(event) {
@@ -397,9 +515,19 @@ function handleShortcuts(event) {
     els.searchInput.focus();
   }
 
-  if (event.key === "Escape" && (state.menuTaskId !== null || state.editingTaskId !== null)) {
+  if (
+    event.key === "Escape" &&
+    (
+      state.menuTaskId !== null ||
+      state.editingTaskId !== null ||
+      state.editingReminderTaskId !== null ||
+      state.composerReminderOpen
+    )
+  ) {
     state.menuTaskId = null;
     state.editingTaskId = null;
+    state.editingReminderTaskId = null;
+    state.composerReminderOpen = false;
     render();
   }
 }
@@ -470,11 +598,152 @@ function syncDateShell(shell, label, value) {
   shell.style.width = hasValue ? `${measureDateShellWidth(label, formatted)}px` : "44px";
 }
 
-function syncReminderSelectState(select, dueDateValue) {
-  const enabled = Boolean(dueDateValue);
-  select.disabled = !enabled;
+function syncReminderEditorFields(typeEl, daysBeforeEl, dateShellEl, dateLabelEl, dateEl, timeEl, enabled) {
+  typeEl.disabled = !enabled;
+  timeEl.disabled = !enabled;
+
   if (!enabled) {
-    select.value = "none";
+    typeEl.value = "none";
+    daysBeforeEl.value = "1";
+    dateEl.value = "";
+    timeEl.value = "09:00";
+  }
+
+  const currentType = enabled ? typeEl.value : "none";
+  daysBeforeEl.classList.toggle("is-hidden", currentType !== "days-before");
+  dateShellEl.classList.toggle("is-hidden", currentType !== "specific-date");
+  daysBeforeEl.disabled = !enabled || currentType !== "days-before";
+  dateEl.disabled = !enabled || currentType !== "specific-date";
+  syncDateShell(dateShellEl, dateLabelEl, dateEl.value);
+}
+
+function defaultReminderConfig() {
+  return {
+    reminderType: "none",
+    reminderDaysBefore: 1,
+    reminderDate: null,
+    reminderTime: "09:00",
+  };
+}
+
+function getComposerReminderConfig() {
+  if (!els.taskDueDate.value) {
+    return defaultReminderConfig();
+  }
+
+  return getNormalizedReminderConfig(
+    els.taskDueDate.value,
+    els.taskReminderType,
+    els.taskReminderDaysBefore,
+    els.taskReminderDate,
+    els.taskReminderTime
+  );
+}
+
+function getTaskEditReminderConfig(form) {
+  return getNormalizedReminderConfig(
+    form.querySelector(".task-edit-date-input").value || null,
+    form.querySelector(".task-edit-reminder-type"),
+    form.querySelector(".task-edit-reminder-days-before"),
+    form.querySelector(".task-edit-reminder-date"),
+    form.querySelector(".task-edit-reminder-time")
+  );
+}
+
+function isReminderConfigured(reminder) {
+  if (!reminder.reminderType || reminder.reminderType === "none") {
+    return false;
+  }
+
+  if (reminder.reminderType === "specific-date") {
+    return Boolean(reminder.reminderDate);
+  }
+
+  return true;
+}
+
+function resetComposerReminder() {
+  els.taskReminderType.value = "none";
+  els.taskReminderDaysBefore.value = "1";
+  els.taskReminderDate.value = "";
+  els.taskReminderTime.value = "09:00";
+  state.composerReminderOpen = false;
+}
+
+function syncTaskEditReminderState(form) {
+  const dueDate = form.querySelector(".task-edit-date-input").value;
+  const reminderToggle = form.querySelector(".task-edit-reminder-toggle");
+  const reminderEditor = form.querySelector(".task-edit-reminder-editor");
+  const reminderType = form.querySelector(".task-edit-reminder-type");
+  const reminderDaysBefore = form.querySelector(".task-edit-reminder-days-before");
+  const reminderDateShell = form.querySelector(".task-edit-reminder-date-shell");
+  const reminderDateLabel = form.querySelector(".task-edit-reminder-date-label");
+  const reminderDate = form.querySelector(".task-edit-reminder-date");
+  const reminderTime = form.querySelector(".task-edit-reminder-time");
+  const taskId = form.dataset.id;
+  const enabled = Boolean(dueDate);
+  const reminder = enabled
+    ? getNormalizedReminderConfig(dueDate, reminderType, reminderDaysBefore, reminderDate, reminderTime)
+    : defaultReminderConfig();
+
+  reminderToggle.classList.toggle("is-hidden", !enabled);
+  reminderToggle.classList.toggle("is-set", enabled && isReminderConfigured(reminder));
+  reminderToggle.classList.toggle("is-open", enabled && state.editingReminderTaskId === taskId);
+  reminderEditor.classList.toggle("is-hidden", !(enabled && state.editingReminderTaskId === taskId));
+
+  if (!enabled) {
+    reminderType.value = "none";
+    reminderDaysBefore.value = "1";
+    reminderDate.value = "";
+    reminderTime.value = "09:00";
+    if (state.editingReminderTaskId === taskId) {
+      state.editingReminderTaskId = null;
+    }
+  }
+
+  syncReminderEditorFields(
+    reminderType,
+    reminderDaysBefore,
+    reminderDateShell,
+    reminderDateLabel,
+    reminderDate,
+    reminderTime,
+    enabled
+  );
+}
+
+function getNormalizedReminderConfig(dueDate, typeEl, daysBeforeEl, dateEl, timeEl) {
+  normalizeReminderInputs(dueDate, typeEl, daysBeforeEl, dateEl, timeEl);
+  return {
+    reminderType: typeEl.value,
+    reminderDaysBefore: Number(daysBeforeEl.value || 1),
+    reminderDate: dateEl.value || null,
+    reminderTime: timeEl.value || "09:00",
+  };
+}
+
+function normalizeReminderInputs(dueDate, typeEl, daysBeforeEl, dateEl, timeEl) {
+  if (!dueDate) {
+    typeEl.value = "none";
+    daysBeforeEl.value = "1";
+    dateEl.value = "";
+    timeEl.value = "09:00";
+    return;
+  }
+
+  if (!["none", "day-of", "days-before", "specific-date"].includes(typeEl.value)) {
+    typeEl.value = "none";
+  }
+
+  const daysBefore = Math.max(1, Number(daysBeforeEl.value || 1));
+  daysBeforeEl.value = String(Number.isFinite(daysBefore) ? daysBefore : 1);
+
+  if (!/^\d{2}:\d{2}$/.test(timeEl.value || "")) {
+    timeEl.value = "09:00";
+  }
+
+  if (typeEl.value === "specific-date" && !dateEl.value) {
+    dateEl.value = dueDate;
   }
 }
 

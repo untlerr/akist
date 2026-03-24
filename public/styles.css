@@ -106,12 +106,23 @@ h2 {
 
 .task-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 170px auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 10px;
 }
 
-.reminder-row {
+.reminder-editor {
   grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.task-edit-control-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .search-shell {
@@ -176,6 +187,7 @@ input:focus {
 
 .reminder-select {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--panel-soft);
@@ -194,6 +206,50 @@ input:focus {
 .reminder-select:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.reminder-number,
+.reminder-time {
+  width: 120px;
+  min-height: 44px;
+}
+
+.reminder-number {
+  text-align: center;
+}
+
+.reminder-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  padding: 0;
+}
+
+.reminder-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reminder-toggle.is-set {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.reminder-toggle.is-open {
+  border-color: var(--line-strong);
 }
 
 .search-shell .search-input {
@@ -375,14 +431,9 @@ input:focus {
 
 .task-edit-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   margin-top: 12px;
-}
-
-.task-edit-reminder-row,
-.task-edit-actions {
-  grid-column: 1 / -1;
 }
 
 .task-edit-actions {
@@ -507,7 +558,8 @@ input:focus {
 .task-menu-item:hover,
 .task-action:hover,
 .pin-button:hover,
-.menu-button:hover {
+.menu-button:hover,
+.reminder-toggle:hover {
   border-color: var(--line-strong);
   color: var(--text);
 }
@@ -552,7 +604,7 @@ input:focus {
   }
 
   .task-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto auto auto;
   }
 
   .task-card {
@@ -571,6 +623,10 @@ input:focus {
 
   .task-edit-form {
     grid-template-columns: 1fr;
+  }
+
+  .reminder-editor {
+    grid-template-columns: 1fr auto;
   }
 
   .task-meta {

@@ -63,13 +63,49 @@
               <span id="taskDueDateLabel" class="date-label"></span>
               <input id="taskDueDate" name="dueDate" class="date-native-input" type="date" aria-label="Due date" />
             </label>
+            <button
+              id="taskReminderToggleBtn"
+              class="reminder-toggle is-hidden"
+              type="button"
+              aria-label="Edit reminder"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="7.25" />
+                <path d="M12 8.5v4.2l2.8 1.7" />
+              </svg>
+            </button>
             <button class="button button-primary add-button" type="submit" aria-label="Add task">+</button>
-            <div class="reminder-row">
-              <select id="taskReminderPreset" class="reminder-select" aria-label="Reminder">
-                <option value="none">no reminder</option>
-                <option value="day-of-0900">remind 9:00 am day of</option>
-                <option value="day-before-1800">remind 6:00 pm day before</option>
+            <div id="taskReminderEditor" class="reminder-editor is-hidden">
+              <select id="taskReminderType" class="reminder-select" aria-label="Reminder timing">
+                <option value="none">off</option>
+                <option value="day-of">day of</option>
+                <option value="days-before">days before</option>
+                <option value="specific-date">specific day</option>
               </select>
+              <input
+                id="taskReminderDaysBefore"
+                class="reminder-number is-hidden"
+                type="number"
+                min="1"
+                max="30"
+                value="1"
+                aria-label="Days before"
+              />
+              <label id="taskReminderDateShell" class="date-shell reminder-date-shell is-hidden" aria-label="Reminder date">
+                <span class="date-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 3.5v3M17 3.5v3M4.5 8.5h15M6 5.5h12a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V7A1.5 1.5 0 0 1 6 5.5Z" />
+                  </svg>
+                </span>
+                <span id="taskReminderDateLabel" class="date-label"></span>
+                <input
+                  id="taskReminderDate"
+                  class="date-native-input"
+                  type="date"
+                  aria-label="Reminder date"
+                />
+              </label>
+              <input id="taskReminderTime" class="reminder-time" type="time" value="09:00" aria-label="Reminder time" />
             </div>
           </form>
         </section>
@@ -100,21 +136,41 @@
           </div>
           <form class="task-edit-form is-hidden">
             <input class="task-edit-title" type="text" maxlength="120" aria-label="Edit task title" />
-            <label class="date-shell task-edit-date-shell" aria-label="Edit due date">
-              <span class="date-icon">
+            <div class="task-edit-control-row">
+              <label class="date-shell task-edit-date-shell" aria-label="Edit due date">
+                <span class="date-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 3.5v3M17 3.5v3M4.5 8.5h15M6 5.5h12a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V7A1.5 1.5 0 0 1 6 5.5Z" />
+                  </svg>
+                </span>
+                <span class="date-label task-edit-date-label"></span>
+                <input class="task-edit-date-input date-native-input" type="date" aria-label="Edit due date" />
+              </label>
+              <button class="reminder-toggle task-edit-reminder-toggle is-hidden" data-action="toggle-edit-reminder" type="button" aria-label="Edit reminder">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M7 3.5v3M17 3.5v3M4.5 8.5h15M6 5.5h12a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V7A1.5 1.5 0 0 1 6 5.5Z" />
+                  <circle cx="12" cy="12" r="7.25" />
+                  <path d="M12 8.5v4.2l2.8 1.7" />
                 </svg>
-              </span>
-              <span class="date-label task-edit-date-label"></span>
-              <input class="task-edit-date-input date-native-input" type="date" aria-label="Edit due date" />
-            </label>
-            <div class="task-edit-reminder-row">
-              <select class="reminder-select task-edit-reminder-select" aria-label="Edit reminder">
-                <option value="none">no reminder</option>
-                <option value="day-of-0900">remind 9:00 am day of</option>
-                <option value="day-before-1800">remind 6:00 pm day before</option>
+              </button>
+            </div>
+            <div class="task-edit-reminder-editor reminder-editor is-hidden">
+              <select class="reminder-select task-edit-reminder-type" aria-label="Edit reminder timing">
+                <option value="none">off</option>
+                <option value="day-of">day of</option>
+                <option value="days-before">days before</option>
+                <option value="specific-date">specific day</option>
               </select>
+              <input class="reminder-number task-edit-reminder-days-before is-hidden" type="number" min="1" max="30" value="1" aria-label="Days before" />
+              <label class="date-shell reminder-date-shell task-edit-reminder-date-shell is-hidden" aria-label="Reminder date">
+                <span class="date-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 3.5v3M17 3.5v3M4.5 8.5h15M6 5.5h12a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V7A1.5 1.5 0 0 1 6 5.5Z" />
+                  </svg>
+                </span>
+                <span class="date-label task-edit-reminder-date-label"></span>
+                <input class="task-edit-reminder-date date-native-input" type="date" aria-label="Reminder date" />
+              </label>
+              <input class="reminder-time task-edit-reminder-time" type="time" value="09:00" aria-label="Reminder time" />
             </div>
             <div class="task-edit-actions">
               <button class="task-save button button-primary" data-action="save-edit" type="submit">save</button>
