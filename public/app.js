@@ -83,7 +83,7 @@ function renderDateTime() {
 }
 
 function renderLoading() {
-  const loading = '<div class="loading-state"><p>Failed to load.</p></div>';
+  const loading = '<div class="loading-state"><p>failed to load.</p></div>';
   els.taskList.innerHTML = loading;
   els.completedList.innerHTML = loading;
 }
@@ -106,7 +106,7 @@ function renderTaskList(container, tasks) {
   if (tasks.length === 0) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.innerHTML = "<p>Empty</p>";
+    empty.innerHTML = "<p>empty</p>";
     container.append(empty);
     return;
   }
@@ -136,7 +136,7 @@ function createTaskCard(task) {
     dateEl.textContent = "";
   }
 
-  pinEl.textContent = "Pinned";
+  pinEl.textContent = "pinned";
   pinEl.classList.toggle("is-visible", Boolean(task.pinned));
 
   const editForm = node.querySelector(".task-edit-form");

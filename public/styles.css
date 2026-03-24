@@ -1,15 +1,15 @@
 :root {
   color-scheme: dark;
-  --bg: #111315;
-  --panel: #171a1d;
-  --panel-soft: #1d2125;
+  --bg: #101010;
+  --panel: #151515;
+  --panel-soft: #1c1c1c;
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.14);
-  --text: #f3efe9;
-  --muted: #9ea5ad;
-  --accent: #7aa6a1;
-  --accent-strong: #5c8480;
-  --danger: #d17979;
+  --text: #f1f1f1;
+  --muted: #9d9d9d;
+  --accent: #d6d6d6;
+  --accent-strong: #bcbcbc;
+  --danger: #b8b8b8;
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
   --radius-lg: 22px;
   --radius-md: 16px;
@@ -28,8 +28,8 @@ body {
   font-family: "Space Grotesk", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top, rgba(122, 166, 161, 0.12), transparent 32%),
-    linear-gradient(180deg, #101214 0%, #14171a 100%);
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.06), transparent 32%),
+    linear-gradient(180deg, #0f0f10 0%, #141414 100%);
 }
 
 button,
@@ -201,16 +201,18 @@ input:focus {
 }
 
 .button-primary {
-  color: #fff7f1;
+  color: #111111;
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
 }
 
 .add-button {
-  min-width: 52px;
-  padding-left: 0;
-  padding-right: 0;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
   font-size: 1.2rem;
   line-height: 1;
+  border-radius: 999px;
 }
 
 .date-shell {
@@ -378,8 +380,8 @@ input:focus {
   display: none;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(122, 166, 161, 0.14);
-  color: #b8d8d4;
+  background: rgba(255, 255, 255, 0.08);
+  color: #d4d4d4;
   font-size: 0.78rem;
 }
 
@@ -388,11 +390,11 @@ input:focus {
 }
 
 .task-date.is-overdue {
-  color: #f1a5a5;
+  color: #cfcfcf;
 }
 
 .task-date.is-today {
-  color: #a8d1cc;
+  color: #ededed;
 }
 
 .task-actions {
@@ -438,9 +440,9 @@ input:focus {
 }
 
 .pin-button.is-pinned {
-  color: #b8d8d4;
-  border-color: rgba(122, 166, 161, 0.34);
-  background: rgba(122, 166, 161, 0.12);
+  color: #f0f0f0;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .task-menu-wrap {
