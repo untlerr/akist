@@ -223,7 +223,7 @@ input:focus {
   width: 44px;
   min-width: 44px;
   height: 44px;
-  padding: 0 12px;
+  padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--panel-soft);
@@ -365,24 +365,10 @@ input:focus {
   overflow-wrap: anywhere;
 }
 
-.task-pin,
 .task-date {
   color: var(--muted);
   font-size: 0.9rem;
   white-space: nowrap;
-}
-
-.task-pin {
-  display: none;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #d4d4d4;
-  font-size: 0.78rem;
-}
-
-.task-pin.is-visible {
-  display: inline-flex;
 }
 
 .task-date.is-overdue {

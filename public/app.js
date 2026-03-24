@@ -127,7 +127,6 @@ function createTaskCard(task) {
   node.querySelector(".task-title").textContent = task.title;
 
   const dateEl = node.querySelector(".task-date");
-  const pinEl = node.querySelector(".task-pin");
   if (task.dueDate) {
     dateEl.textContent = formatDueDate(task.dueDate);
     dateEl.classList.toggle("is-overdue", isOverdue(task));
@@ -135,9 +134,6 @@ function createTaskCard(task) {
   } else {
     dateEl.textContent = "";
   }
-
-  pinEl.textContent = "pinned";
-  pinEl.classList.toggle("is-visible", Boolean(task.pinned));
 
   const editForm = node.querySelector(".task-edit-form");
   editForm.classList.toggle("is-hidden", state.editingTaskId !== task.id);
@@ -496,7 +492,7 @@ function measureDateShellWidth(label, text) {
   context.font = `${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`;
   const textWidth = context.measureText(text).width;
 
-  return Math.ceil(textWidth + 18 + 10 + 24 + 6);
+  return Math.ceil(textWidth + 18 + 10 + 28 + 14);
 }
 
 async function api(url, options = {}) {
