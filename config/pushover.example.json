@@ -1,0 +1,6 @@
+{
+  "appToken": "your-pushover-application-token",
+  "userKey": "your-pushover-user-key",
+  "device": "your-device-name",
+  "emailAlias": "your-pushover-email-alias"
+}

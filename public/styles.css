@@ -110,6 +110,10 @@ h2 {
   gap: 10px;
 }
 
+.reminder-row {
+  grid-column: 1 / -1;
+}
+
 .search-shell {
   display: inline-flex;
   align-items: center;
@@ -170,6 +174,28 @@ input:focus {
   border-color: var(--line-strong);
 }
 
+.reminder-select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel-soft);
+  color: var(--muted);
+  padding: 12px 14px;
+  appearance: none;
+  min-height: 44px;
+}
+
+.reminder-select:focus {
+  outline: none;
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.reminder-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .search-shell .search-input {
   width: 0;
   min-width: 0;
@@ -219,7 +245,7 @@ input:focus {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 0;
   width: 44px;
   min-width: 44px;
   height: 44px;
@@ -232,6 +258,10 @@ input:focus {
   transition:
     width 180ms ease,
     border-color 180ms ease;
+}
+
+.date-shell.has-value {
+  gap: 10px;
 }
 
 .date-icon {
@@ -350,9 +380,15 @@ input:focus {
   margin-top: 12px;
 }
 
+.task-edit-reminder-row,
+.task-edit-actions {
+  grid-column: 1 / -1;
+}
+
 .task-edit-actions {
   display: flex;
   gap: 8px;
+  justify-content: end;
 }
 
 .task-meta {

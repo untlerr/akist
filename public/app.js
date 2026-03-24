@@ -8,6 +8,7 @@ const els = {
   taskDueDateShell: document.querySelector("#taskDueDateShell"),
   taskDueDateLabel: document.querySelector("#taskDueDateLabel"),
   taskDueDate: document.querySelector("#taskDueDate"),
+  taskReminderPreset: document.querySelector("#taskReminderPreset"),
   searchInput: document.querySelector("#searchInput"),
   taskList: document.querySelector("#taskList"),
   completedList: document.querySelector("#completedList"),
@@ -37,6 +38,7 @@ async function init() {
     state.tasks = Array.isArray(bootstrap.data.tasks) ? bootstrap.data.tasks : [];
     state.todayKey = getEasternDateKey() || bootstrap.todayKey;
     syncComposerDate();
+    syncComposerReminderState();
     render();
   } catch (error) {
     console.error(error);
@@ -48,6 +50,8 @@ function bindEvents() {
   els.taskForm.addEventListener("submit", handleTaskSubmit);
   els.taskDueDate.addEventListener("input", syncComposerDate);
   els.taskDueDate.addEventListener("change", syncComposerDate);
+  els.taskDueDate.addEventListener("input", syncComposerReminderState);
+  els.taskDueDate.addEventListener("change", syncComposerReminderState);
   els.searchInput.addEventListener("input", handleSearch);
   els.searchInput.addEventListener("blur", handleSearchBlur);
   els.searchToggleBtn.addEventListener("click", toggleSearch);
@@ -144,6 +148,9 @@ function createTaskCard(task) {
   const editDateLabel = editForm.querySelector(".task-edit-date-label");
   editDateInput.value = task.dueDate || "";
   syncDateShell(editDateShell, editDateLabel, editDateInput.value);
+  const editReminderSelect = editForm.querySelector(".task-edit-reminder-select");
+  editReminderSelect.value = task.reminderPreset || "none";
+  syncReminderSelectState(editReminderSelect, editDateInput.value);
 
   const pinButton = node.querySelector(".pin-button");
   pinButton.dataset.action = "toggle-pin";
@@ -173,6 +180,7 @@ async function handleTaskSubmit(event) {
   const payload = {
     title: els.taskTitle.value.trim(),
     dueDate: els.taskDueDate.value || null,
+    reminderPreset: els.taskDueDate.value ? els.taskReminderPreset.value : "none",
     dayKey: state.todayKey,
   };
 
@@ -188,6 +196,7 @@ async function handleTaskSubmit(event) {
   state.tasks.unshift(response.task);
   els.taskForm.reset();
   syncComposerDate();
+  syncComposerReminderState();
   render();
   els.taskTitle.focus();
 }
@@ -217,6 +226,10 @@ function handleDateShellClick(event) {
 
 function syncComposerDate() {
   syncDateShell(els.taskDueDateShell, els.taskDueDateLabel, els.taskDueDate.value);
+}
+
+function syncComposerReminderState() {
+  syncReminderSelectState(els.taskReminderPreset, els.taskDueDate.value);
 }
 
 function toggleSearch() {
@@ -330,6 +343,7 @@ async function handleTaskFormActions(event) {
   const taskId = form.dataset.id;
   const title = form.querySelector(".task-edit-title").value.trim();
   const dueDate = form.querySelector(".task-edit-date-input").value || null;
+  const reminderPreset = dueDate ? form.querySelector(".task-edit-reminder-select").value : "none";
 
   if (!title) {
     return;
@@ -337,7 +351,7 @@ async function handleTaskFormActions(event) {
 
   const response = await api(`/api/tasks/${taskId}`, {
     method: "PATCH",
-    body: JSON.stringify({ title, dueDate }),
+    body: JSON.stringify({ title, dueDate, reminderPreset }),
   });
 
   replaceTask(response.task);
@@ -346,6 +360,10 @@ async function handleTaskFormActions(event) {
 }
 
 function handleDynamicDateInput(event) {
+  if (event.target === els.taskDueDate) {
+    return;
+  }
+
   const input = event.target.closest(".task-edit-date-input");
   if (!input) {
     return;
@@ -361,6 +379,7 @@ function handleDynamicDateInput(event) {
     form.querySelector(".task-edit-date-label"),
     input.value
   );
+  syncReminderSelectState(form.querySelector(".task-edit-reminder-select"), input.value);
 }
 
 function handleShortcuts(event) {
@@ -449,6 +468,14 @@ function syncDateShell(shell, label, value) {
   shell.classList.toggle("has-year", hasValue && formatted.includes(","));
   label.textContent = formatted;
   shell.style.width = hasValue ? `${measureDateShellWidth(label, formatted)}px` : "44px";
+}
+
+function syncReminderSelectState(select, dueDateValue) {
+  const enabled = Boolean(dueDateValue);
+  select.disabled = !enabled;
+  if (!enabled) {
+    select.value = "none";
+  }
 }
 
 function openDatePicker(input) {

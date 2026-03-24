@@ -13,6 +13,12 @@ const HOST = process.env.HOST || "0.0.0.0";
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "dayboard.json");
+const CONFIG_DIR = path.join(__dirname, "config");
+const PUSHOVER_CONFIG_FILE = path.join(CONFIG_DIR, "pushover.local.json");
+const REMINDER_CHECK_MS = 30 * 1000;
+
+let reminderLoopRunning = false;
+let lastPushoverWarning = "";
 
 createServer(async (req, res) => {
   try {
@@ -35,6 +41,11 @@ createServer(async (req, res) => {
   if (lanAddress) {
     console.log(`Available on your network at http://${lanAddress}:${PORT}`);
   }
+
+  void processDueReminders();
+  setInterval(() => {
+    void processDueReminders();
+  }, REMINDER_CHECK_MS);
 });
 
 async function handleApi(req, res, url) {
@@ -46,6 +57,7 @@ async function handleApi(req, res, url) {
       version: "0.1.0",
       lanAddress: getLanAddress(),
       todayKey: getTodayKey(),
+      notificationsReady: await isPushoverReady(),
       data: db,
     });
     return;
@@ -162,16 +174,20 @@ function starterTasks() {
 }
 
 function normalizeTask(input) {
-  return {
+  const task = {
     id: String(input.id || randomUUID()),
     title: String(input.title || "").trim(),
     dueDate: sanitizeDueDate(input.dueDate),
     pinned: Boolean(input.pinned),
+    reminderPreset: sanitizeReminderPreset(input.reminderPreset),
+    reminderAt: input.reminderAt || null,
+    reminderSentAt: input.reminderSentAt || null,
     done: Boolean(input.done),
     createdAt: input.createdAt || new Date().toISOString(),
     completedAt: input.completedAt || null,
     dayKey: input.dayKey || getTodayKey(),
   };
+  return applyReminderState(task);
 }
 
 function sanitizeTaskPatch(input) {
@@ -179,6 +195,7 @@ function sanitizeTaskPatch(input) {
     ...(input.title !== undefined ? { title: String(input.title).trim() } : {}),
     ...(input.dueDate !== undefined ? { dueDate: sanitizeDueDate(input.dueDate) } : {}),
     ...(input.pinned !== undefined ? { pinned: Boolean(input.pinned) } : {}),
+    ...(input.reminderPreset !== undefined ? { reminderPreset: sanitizeReminderPreset(input.reminderPreset) } : {}),
     ...(input.done !== undefined ? { done: Boolean(input.done) } : {}),
     ...(input.dayKey !== undefined ? { dayKey: String(input.dayKey) } : {}),
   };
@@ -264,4 +281,157 @@ function sanitizeDueDate(value) {
 
   const stringValue = String(value);
   return /^\d{4}-\d{2}-\d{2}$/.test(stringValue) ? stringValue : null;
+}
+
+function sanitizeReminderPreset(value) {
+  return oneOf(value, ["none", "day-of-0900", "day-before-1800"], "none");
+}
+
+function applyReminderState(task) {
+  const nextReminderAt = computeReminderAt(task.dueDate, task.reminderPreset);
+  const reminderChanged = nextReminderAt !== task.reminderAt;
+
+  task.reminderAt = nextReminderAt;
+  if (!task.reminderAt) {
+    task.reminderPreset = "none";
+    task.reminderSentAt = null;
+    return task;
+  }
+
+  if (reminderChanged) {
+    task.reminderSentAt = null;
+  }
+
+  return task;
+}
+
+function computeReminderAt(dueDate, reminderPreset) {
+  if (!dueDate || reminderPreset === "none") {
+    return null;
+  }
+
+  const [year, month, day] = dueDate.split("-").map(Number);
+  const reminderDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+
+  if (reminderPreset === "day-before-1800") {
+    reminderDate.setDate(reminderDate.getDate() - 1);
+    reminderDate.setHours(18, 0, 0, 0);
+    return reminderDate.toISOString();
+  }
+
+  reminderDate.setHours(9, 0, 0, 0);
+  return reminderDate.toISOString();
+}
+
+async function processDueReminders() {
+  if (reminderLoopRunning) {
+    return;
+  }
+
+  reminderLoopRunning = true;
+
+  try {
+    const config = await loadPushoverConfig();
+    if (!config.appToken || !config.userKey) {
+      const nextWarning = "Pushover reminders are configured locally, but appToken or userKey is missing.";
+      if (lastPushoverWarning !== nextWarning) {
+        console.warn(nextWarning);
+        lastPushoverWarning = nextWarning;
+      }
+      return;
+    }
+
+    const db = await readDatabase();
+    const now = Date.now();
+    let changed = false;
+
+    for (const task of db.tasks) {
+      if (
+        task.done ||
+        !task.reminderAt ||
+        task.reminderSentAt ||
+        new Date(task.reminderAt).getTime() > now
+      ) {
+        continue;
+      }
+
+      await sendPushoverReminder(task, config);
+      task.reminderSentAt = new Date().toISOString();
+      changed = true;
+    }
+
+    if (changed) {
+      await writeDatabase(db);
+    }
+  } catch (error) {
+    console.error("Failed to process reminders.", error);
+  } finally {
+    reminderLoopRunning = false;
+  }
+}
+
+async function loadPushoverConfig() {
+  const envConfig = {
+    appToken: process.env.PUSHOVER_APP_TOKEN || "",
+    userKey: process.env.PUSHOVER_USER_KEY || "",
+    device: process.env.PUSHOVER_DEVICE || "",
+    emailAlias: process.env.PUSHOVER_EMAIL_ALIAS || "",
+  };
+
+  try {
+    const raw = await fs.readFile(PUSHOVER_CONFIG_FILE, "utf8");
+    const parsed = JSON.parse(raw);
+    return {
+      appToken: envConfig.appToken || String(parsed.appToken || ""),
+      userKey: envConfig.userKey || String(parsed.userKey || ""),
+      device: envConfig.device || String(parsed.device || ""),
+      emailAlias: envConfig.emailAlias || String(parsed.emailAlias || ""),
+    };
+  } catch {
+    return envConfig;
+  }
+}
+
+async function isPushoverReady() {
+  const config = await loadPushoverConfig();
+  return Boolean(config.appToken && config.userKey);
+}
+
+async function sendPushoverReminder(task, config) {
+  const body = new URLSearchParams({
+    token: config.appToken,
+    user: config.userKey,
+    message: buildReminderMessage(task),
+    title: "akist",
+    priority: task.pinned ? "1" : "0",
+    ...(config.device ? { device: config.device } : {}),
+  });
+
+  const response = await fetch("https://api.pushover.net/1/messages.json", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Pushover request failed: ${text}`);
+  }
+}
+
+function buildReminderMessage(task) {
+  const dueLabel = task.dueDate ? formatDueDate(task.dueDate) : "no due date";
+  return task.pinned ? `important: ${task.title} · due ${dueLabel}` : `${task.title} · due ${dueLabel}`;
+}
+
+function formatDueDate(dueDate) {
+  const [year, month, day] = dueDate.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }

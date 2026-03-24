@@ -64,6 +64,13 @@
               <input id="taskDueDate" name="dueDate" class="date-native-input" type="date" aria-label="Due date" />
             </label>
             <button class="button button-primary add-button" type="submit" aria-label="Add task">+</button>
+            <div class="reminder-row">
+              <select id="taskReminderPreset" class="reminder-select" aria-label="Reminder">
+                <option value="none">no reminder</option>
+                <option value="day-of-0900">remind 9:00 am day of</option>
+                <option value="day-before-1800">remind 6:00 pm day before</option>
+              </select>
+            </div>
           </form>
         </section>
 
@@ -102,6 +109,13 @@
               <span class="date-label task-edit-date-label"></span>
               <input class="task-edit-date-input date-native-input" type="date" aria-label="Edit due date" />
             </label>
+            <div class="task-edit-reminder-row">
+              <select class="reminder-select task-edit-reminder-select" aria-label="Edit reminder">
+                <option value="none">no reminder</option>
+                <option value="day-of-0900">remind 9:00 am day of</option>
+                <option value="day-before-1800">remind 6:00 pm day before</option>
+              </select>
+            </div>
             <div class="task-edit-actions">
               <button class="task-save button button-primary" data-action="save-edit" type="submit">save</button>
               <button class="task-cancel task-action" data-action="cancel-edit" type="button">cancel</button>
