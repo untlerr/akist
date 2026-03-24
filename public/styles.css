@@ -432,6 +432,17 @@ input:focus {
 .menu-button svg {
   width: 16px;
   height: 16px;
+}
+
+.pin-button svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.menu-button svg {
   fill: currentColor;
 }
 
@@ -439,6 +450,11 @@ input:focus {
   color: #f0f0f0;
   border-color: rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.08);
+}
+
+.pin-button.is-pinned svg {
+  fill: currentColor;
+  stroke: currentColor;
 }
 
 .task-menu-wrap {
