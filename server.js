@@ -260,6 +260,11 @@ function getTodayKey() {
 }
 
 function getLanAddress() {
+  const overrideAddress = String(process.env.AKIST_LAN_ADDRESS || "").trim();
+  if (isValidIpv4Address(overrideAddress)) {
+    return overrideAddress;
+  }
+
   const networks = networkInterfaces();
   const candidates = [];
 
@@ -282,6 +287,17 @@ function getLanAddress() {
 
   candidates.sort((a, b) => b.score - a.score);
   return candidates[0].address;
+}
+
+function isValidIpv4Address(address) {
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(address)) {
+    return false;
+  }
+
+  return address
+    .split(".")
+    .map((chunk) => Number(chunk))
+    .every((part) => Number.isInteger(part) && part >= 0 && part <= 255);
 }
 
 function scoreLanCandidate(interfaceName, address) {
