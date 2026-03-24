@@ -448,8 +448,10 @@ function formatDueDate(dueDate) {
 
 function syncDateShell(shell, label, value) {
   const hasValue = Boolean(value);
+  const formatted = hasValue ? formatDueDate(value) : "";
   shell.classList.toggle("has-value", hasValue);
-  label.textContent = hasValue ? formatDueDate(value) : "";
+  shell.classList.toggle("has-year", hasValue && formatted.includes(","));
+  label.textContent = formatted;
 }
 
 function openDatePicker(input) {

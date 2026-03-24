@@ -235,7 +235,11 @@ input:focus {
 }
 
 .date-shell.has-value {
-  width: 150px;
+  width: 96px;
+}
+
+.date-shell.has-value.has-year {
+  width: 148px;
 }
 
 .date-icon {
