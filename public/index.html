@@ -77,7 +77,7 @@
             <button class="button button-primary add-button" type="submit" aria-label="Add task">+</button>
             <div id="taskReminderEditor" class="reminder-editor is-hidden">
               <select id="taskReminderType" class="reminder-select" aria-label="Reminder timing">
-                <option value="none">off</option>
+                <option value="none">none</option>
                 <option value="day-of">day of</option>
                 <option value="days-before">days before</option>
                 <option value="specific-date">specific day</option>
@@ -105,7 +105,14 @@
                   aria-label="Reminder date"
                 />
               </label>
-              <input id="taskReminderTime" class="reminder-time" type="time" value="09:00" aria-label="Reminder time" />
+              <div class="reminder-time-group" aria-label="Reminder time">
+                <select id="taskReminderHour" class="reminder-time-part reminder-hour" aria-label="Reminder hour"></select>
+                <select id="taskReminderMinute" class="reminder-time-part reminder-minute" aria-label="Reminder minute"></select>
+                <select id="taskReminderMeridiem" class="reminder-time-part reminder-meridiem" aria-label="Reminder am pm">
+                  <option value="am">am</option>
+                  <option value="pm">pm</option>
+                </select>
+              </div>
             </div>
           </form>
         </section>
@@ -155,7 +162,7 @@
             </div>
             <div class="task-edit-reminder-editor reminder-editor is-hidden">
               <select class="reminder-select task-edit-reminder-type" aria-label="Edit reminder timing">
-                <option value="none">off</option>
+                <option value="none">none</option>
                 <option value="day-of">day of</option>
                 <option value="days-before">days before</option>
                 <option value="specific-date">specific day</option>
@@ -170,7 +177,14 @@
                 <span class="date-label task-edit-reminder-date-label"></span>
                 <input class="task-edit-reminder-date date-native-input" type="date" aria-label="Reminder date" />
               </label>
-              <input class="reminder-time task-edit-reminder-time" type="time" value="09:00" aria-label="Reminder time" />
+              <div class="reminder-time-group" aria-label="Edit reminder time">
+                <select class="reminder-time-part reminder-hour task-edit-reminder-hour" aria-label="Edit reminder hour"></select>
+                <select class="reminder-time-part reminder-minute task-edit-reminder-minute" aria-label="Edit reminder minute"></select>
+                <select class="reminder-time-part reminder-meridiem task-edit-reminder-meridiem" aria-label="Edit reminder am pm">
+                  <option value="am">am</option>
+                  <option value="pm">pm</option>
+                </select>
+              </div>
             </div>
             <div class="task-edit-actions">
               <button class="task-save button button-primary" data-action="save-edit" type="submit">save</button>

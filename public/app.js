@@ -15,7 +15,9 @@ const els = {
   taskReminderDateShell: document.querySelector("#taskReminderDateShell"),
   taskReminderDateLabel: document.querySelector("#taskReminderDateLabel"),
   taskReminderDate: document.querySelector("#taskReminderDate"),
-  taskReminderTime: document.querySelector("#taskReminderTime"),
+  taskReminderHour: document.querySelector("#taskReminderHour"),
+  taskReminderMinute: document.querySelector("#taskReminderMinute"),
+  taskReminderMeridiem: document.querySelector("#taskReminderMeridiem"),
   searchInput: document.querySelector("#searchInput"),
   taskList: document.querySelector("#taskList"),
   completedList: document.querySelector("#completedList"),
@@ -38,6 +40,7 @@ const state = {
 init();
 
 async function init() {
+  populateReminderTimeControls();
   bindEvents();
   renderDateTime();
   window.setInterval(renderDateTime, 1000);
@@ -68,8 +71,12 @@ function bindEvents() {
   els.taskReminderDaysBefore.addEventListener("change", syncComposerReminderState);
   els.taskReminderDate.addEventListener("input", syncComposerReminderDate);
   els.taskReminderDate.addEventListener("change", syncComposerReminderDate);
-  els.taskReminderTime.addEventListener("input", syncComposerReminderState);
-  els.taskReminderTime.addEventListener("change", syncComposerReminderState);
+  els.taskReminderHour.addEventListener("input", syncComposerReminderState);
+  els.taskReminderHour.addEventListener("change", syncComposerReminderState);
+  els.taskReminderMinute.addEventListener("input", syncComposerReminderState);
+  els.taskReminderMinute.addEventListener("change", syncComposerReminderState);
+  els.taskReminderMeridiem.addEventListener("input", syncComposerReminderState);
+  els.taskReminderMeridiem.addEventListener("change", syncComposerReminderState);
   els.searchInput.addEventListener("input", handleSearch);
   els.searchInput.addEventListener("blur", handleSearchBlur);
   els.searchToggleBtn.addEventListener("click", toggleSearch);
@@ -174,12 +181,14 @@ function createTaskCard(task) {
   const editReminderDateShell = editForm.querySelector(".task-edit-reminder-date-shell");
   const editReminderDateLabel = editForm.querySelector(".task-edit-reminder-date-label");
   const editReminderDate = editForm.querySelector(".task-edit-reminder-date");
-  const editReminderTime = editForm.querySelector(".task-edit-reminder-time");
+  const editReminderHour = editForm.querySelector(".task-edit-reminder-hour");
+  const editReminderMinute = editForm.querySelector(".task-edit-reminder-minute");
+  const editReminderMeridiem = editForm.querySelector(".task-edit-reminder-meridiem");
 
   editReminderType.value = task.reminderType || "none";
   editReminderDaysBefore.value = String(task.reminderDaysBefore || 1);
   editReminderDate.value = task.reminderDate || "";
-  editReminderTime.value = task.reminderTime || "09:00";
+  writeReminderTimeParts(editReminderHour, editReminderMinute, editReminderMeridiem, task.reminderTime || "09:00");
   syncDateShell(editReminderDateShell, editReminderDateLabel, editReminderDate.value);
   syncTaskEditReminderState(editForm);
 
@@ -269,7 +278,7 @@ function syncComposerReminderState() {
         els.taskReminderType,
         els.taskReminderDaysBefore,
         els.taskReminderDate,
-        els.taskReminderTime
+        getReminderTimeParts(els.taskReminderHour, els.taskReminderMinute, els.taskReminderMeridiem)
       )
     : defaultReminderConfig();
   const reminderSet = hasDueDate && isReminderConfigured(reminder);
@@ -285,7 +294,7 @@ function syncComposerReminderState() {
     els.taskReminderDateShell,
     els.taskReminderDateLabel,
     els.taskReminderDate,
-    els.taskReminderTime,
+    getReminderTimeParts(els.taskReminderHour, els.taskReminderMinute, els.taskReminderMeridiem),
     hasDueDate
   );
 }
@@ -489,8 +498,10 @@ function handleDynamicDateInput(event) {
 
   const editReminderType = event.target.closest(".task-edit-reminder-type");
   const editReminderDaysBefore = event.target.closest(".task-edit-reminder-days-before");
-  const editReminderTime = event.target.closest(".task-edit-reminder-time");
-  if (editReminderType || editReminderDaysBefore || editReminderTime) {
+  const editReminderHour = event.target.closest(".task-edit-reminder-hour");
+  const editReminderMinute = event.target.closest(".task-edit-reminder-minute");
+  const editReminderMeridiem = event.target.closest(".task-edit-reminder-meridiem");
+  if (editReminderType || editReminderDaysBefore || editReminderHour || editReminderMinute || editReminderMeridiem) {
     const form = event.target.closest(".task-edit-form");
     if (!form) {
       return;
@@ -598,15 +609,18 @@ function syncDateShell(shell, label, value) {
   shell.style.width = hasValue ? `${measureDateShellWidth(label, formatted)}px` : "44px";
 }
 
-function syncReminderEditorFields(typeEl, daysBeforeEl, dateShellEl, dateLabelEl, dateEl, timeEl, enabled) {
+function syncReminderEditorFields(typeEl, daysBeforeEl, dateShellEl, dateLabelEl, dateEl, timeControls, enabled) {
+  const { hourEl, minuteEl, meridiemEl } = timeControls;
   typeEl.disabled = !enabled;
-  timeEl.disabled = !enabled;
+  hourEl.disabled = !enabled;
+  minuteEl.disabled = !enabled;
+  meridiemEl.disabled = !enabled;
 
   if (!enabled) {
     typeEl.value = "none";
     daysBeforeEl.value = "1";
     dateEl.value = "";
-    timeEl.value = "09:00";
+    writeReminderTimeParts(hourEl, minuteEl, meridiemEl, "09:00");
   }
 
   const currentType = enabled ? typeEl.value : "none";
@@ -636,7 +650,7 @@ function getComposerReminderConfig() {
     els.taskReminderType,
     els.taskReminderDaysBefore,
     els.taskReminderDate,
-    els.taskReminderTime
+    getReminderTimeParts(els.taskReminderHour, els.taskReminderMinute, els.taskReminderMeridiem)
   );
 }
 
@@ -646,7 +660,11 @@ function getTaskEditReminderConfig(form) {
     form.querySelector(".task-edit-reminder-type"),
     form.querySelector(".task-edit-reminder-days-before"),
     form.querySelector(".task-edit-reminder-date"),
-    form.querySelector(".task-edit-reminder-time")
+    getReminderTimeParts(
+      form.querySelector(".task-edit-reminder-hour"),
+      form.querySelector(".task-edit-reminder-minute"),
+      form.querySelector(".task-edit-reminder-meridiem")
+    )
   );
 }
 
@@ -666,7 +684,7 @@ function resetComposerReminder() {
   els.taskReminderType.value = "none";
   els.taskReminderDaysBefore.value = "1";
   els.taskReminderDate.value = "";
-  els.taskReminderTime.value = "09:00";
+  writeReminderTimeParts(els.taskReminderHour, els.taskReminderMinute, els.taskReminderMeridiem, "09:00");
   state.composerReminderOpen = false;
 }
 
@@ -679,7 +697,11 @@ function syncTaskEditReminderState(form) {
   const reminderDateShell = form.querySelector(".task-edit-reminder-date-shell");
   const reminderDateLabel = form.querySelector(".task-edit-reminder-date-label");
   const reminderDate = form.querySelector(".task-edit-reminder-date");
-  const reminderTime = form.querySelector(".task-edit-reminder-time");
+  const reminderTime = getReminderTimeParts(
+    form.querySelector(".task-edit-reminder-hour"),
+    form.querySelector(".task-edit-reminder-minute"),
+    form.querySelector(".task-edit-reminder-meridiem")
+  );
   const taskId = form.dataset.id;
   const enabled = Boolean(dueDate);
   const reminder = enabled
@@ -695,7 +717,7 @@ function syncTaskEditReminderState(form) {
     reminderType.value = "none";
     reminderDaysBefore.value = "1";
     reminderDate.value = "";
-    reminderTime.value = "09:00";
+    writeReminderTimeParts(reminderTime.hourEl, reminderTime.minuteEl, reminderTime.meridiemEl, "09:00");
     if (state.editingReminderTaskId === taskId) {
       state.editingReminderTaskId = null;
     }
@@ -712,22 +734,23 @@ function syncTaskEditReminderState(form) {
   );
 }
 
-function getNormalizedReminderConfig(dueDate, typeEl, daysBeforeEl, dateEl, timeEl) {
-  normalizeReminderInputs(dueDate, typeEl, daysBeforeEl, dateEl, timeEl);
+function getNormalizedReminderConfig(dueDate, typeEl, daysBeforeEl, dateEl, timeControls) {
+  normalizeReminderInputs(dueDate, typeEl, daysBeforeEl, dateEl, timeControls);
   return {
     reminderType: typeEl.value,
     reminderDaysBefore: Number(daysBeforeEl.value || 1),
     reminderDate: dateEl.value || null,
-    reminderTime: timeEl.value || "09:00",
+    reminderTime: readReminderTimeParts(timeControls.hourEl, timeControls.minuteEl, timeControls.meridiemEl),
   };
 }
 
-function normalizeReminderInputs(dueDate, typeEl, daysBeforeEl, dateEl, timeEl) {
+function normalizeReminderInputs(dueDate, typeEl, daysBeforeEl, dateEl, timeControls) {
+  const { hourEl, minuteEl, meridiemEl } = timeControls;
   if (!dueDate) {
     typeEl.value = "none";
     daysBeforeEl.value = "1";
     dateEl.value = "";
-    timeEl.value = "09:00";
+    writeReminderTimeParts(hourEl, minuteEl, meridiemEl, "09:00");
     return;
   }
 
@@ -738,13 +761,70 @@ function normalizeReminderInputs(dueDate, typeEl, daysBeforeEl, dateEl, timeEl) 
   const daysBefore = Math.max(1, Number(daysBeforeEl.value || 1));
   daysBeforeEl.value = String(Number.isFinite(daysBefore) ? daysBefore : 1);
 
-  if (!/^\d{2}:\d{2}$/.test(timeEl.value || "")) {
-    timeEl.value = "09:00";
-  }
+  writeReminderTimeParts(
+    hourEl,
+    minuteEl,
+    meridiemEl,
+    readReminderTimeParts(hourEl, minuteEl, meridiemEl)
+  );
 
   if (typeEl.value === "specific-date" && !dateEl.value) {
     dateEl.value = dueDate;
   }
+}
+
+function populateReminderTimeControls() {
+  const containers = [document, els.taskCardTemplate.content];
+
+  containers.forEach((container) => {
+    container.querySelectorAll(".reminder-hour").forEach((select) => {
+      if (!select.options.length) {
+        for (let hour = 1; hour <= 12; hour += 1) {
+          select.add(new Option(String(hour), String(hour)));
+        }
+      }
+    });
+
+    container.querySelectorAll(".reminder-minute").forEach((select) => {
+      if (!select.options.length) {
+        for (let minute = 0; minute < 60; minute += 1) {
+          const value = String(minute).padStart(2, "0");
+          select.add(new Option(value, value));
+        }
+      }
+    });
+  });
+
+  writeReminderTimeParts(els.taskReminderHour, els.taskReminderMinute, els.taskReminderMeridiem, "09:00");
+}
+
+function getReminderTimeParts(hourEl, minuteEl, meridiemEl) {
+  return { hourEl, minuteEl, meridiemEl };
+}
+
+function readReminderTimeParts(hourEl, minuteEl, meridiemEl) {
+  const hourValue = Math.max(1, Math.min(12, Number(hourEl.value || 9)));
+  const minuteValue = Math.max(0, Math.min(59, Number(minuteEl.value || 0)));
+  const meridiem = meridiemEl.value === "pm" ? "pm" : "am";
+
+  let hour24 = hourValue % 12;
+  if (meridiem === "pm") {
+    hour24 += 12;
+  }
+
+  return `${String(hour24).padStart(2, "0")}:${String(minuteValue).padStart(2, "0")}`;
+}
+
+function writeReminderTimeParts(hourEl, minuteEl, meridiemEl, value) {
+  const [rawHour, rawMinute] = String(value || "09:00").split(":").map(Number);
+  const safeHour = Number.isFinite(rawHour) ? Math.max(0, Math.min(23, rawHour)) : 9;
+  const safeMinute = Number.isFinite(rawMinute) ? Math.max(0, Math.min(59, rawMinute)) : 0;
+  const meridiem = safeHour >= 12 ? "pm" : "am";
+  const hour12 = safeHour % 12 || 12;
+
+  hourEl.value = String(hour12);
+  minuteEl.value = String(safeMinute).padStart(2, "0");
+  meridiemEl.value = meridiem;
 }
 
 function openDatePicker(input) {

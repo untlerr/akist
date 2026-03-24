@@ -113,8 +113,9 @@ h2 {
 .reminder-editor {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: auto auto auto;
   align-items: center;
+  justify-content: start;
   gap: 10px;
 }
 
@@ -185,7 +186,8 @@ input:focus {
   border-color: var(--line-strong);
 }
 
-.reminder-select {
+.reminder-select,
+.reminder-time-part {
   width: 100%;
   min-width: 0;
   border: 1px solid var(--line);
@@ -197,7 +199,14 @@ input:focus {
   min-height: 44px;
 }
 
-.reminder-select:focus {
+.reminder-select {
+  width: auto;
+  min-width: 132px;
+  padding-right: 36px;
+}
+
+.reminder-select:focus,
+.reminder-time-part:focus {
   outline: none;
   border-color: var(--line-strong);
   color: var(--text);
@@ -208,14 +217,26 @@ input:focus {
   cursor: not-allowed;
 }
 
-.reminder-number,
-.reminder-time {
+.reminder-number {
   width: 120px;
   min-height: 44px;
 }
 
 .reminder-number {
   text-align: center;
+}
+
+.reminder-time-group {
+  display: inline-grid;
+  grid-template-columns: 68px 84px 76px;
+  gap: 8px;
+  align-items: center;
+}
+
+.reminder-time-part {
+  appearance: none;
+  text-align: center;
+  padding: 12px 10px;
 }
 
 .reminder-toggle {
@@ -301,11 +322,12 @@ input:focus {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0;
   width: 44px;
   min-width: 44px;
   height: 44px;
-  padding: 0 14px;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--panel-soft);
@@ -317,7 +339,9 @@ input:focus {
 }
 
 .date-shell.has-value {
+  justify-content: start;
   gap: 10px;
+  padding: 0 14px;
 }
 
 .date-icon {
@@ -626,7 +650,21 @@ input:focus {
   }
 
   .reminder-editor {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .reminder-select {
+    width: 100%;
+  }
+
+  .reminder-number,
+  .reminder-time-group {
+    width: 100%;
+  }
+
+  .reminder-time-group {
+    grid-template-columns: 1fr 1fr 1fr;
   }
 
   .task-meta {
