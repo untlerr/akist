@@ -1,2 +1,2 @@
-data/dayboard.json
+data/*.json
 config/pushover.local.json

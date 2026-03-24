@@ -12,7 +12,8 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
-const DATA_FILE = path.join(DATA_DIR, "dayboard.json");
+const DATA_FILE = resolveDataFilePath();
+const DATA_FILE_DIR = path.dirname(DATA_FILE);
 const CONFIG_DIR = path.join(__dirname, "config");
 const PUSHOVER_CONFIG_FILE = path.join(CONFIG_DIR, "pushover.local.json");
 const REMINDER_CHECK_MS = 30 * 1000;
@@ -146,7 +147,7 @@ async function serveStatic(req, res, url) {
 }
 
 async function readDatabase() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.mkdir(DATA_FILE_DIR, { recursive: true });
 
   try {
     const raw = await fs.readFile(DATA_FILE, "utf8");
@@ -166,7 +167,7 @@ async function readDatabase() {
 }
 
 async function writeDatabase(db) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.mkdir(DATA_FILE_DIR, { recursive: true });
   await fs.writeFile(DATA_FILE, JSON.stringify(db, null, 2));
 }
 
@@ -257,6 +258,19 @@ function getTodayKey() {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function resolveDataFilePath() {
+  const configuredPath = String(process.env.AKIST_DATA_FILE || "").trim();
+  if (!configuredPath) {
+    return path.join(DATA_DIR, "akist.json");
+  }
+
+  if (path.isAbsolute(configuredPath)) {
+    return configuredPath;
+  }
+
+  return path.resolve(__dirname, configuredPath);
 }
 
 function getLanAddress() {
