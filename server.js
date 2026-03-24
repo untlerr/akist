@@ -261,14 +261,63 @@ function getTodayKey() {
 
 function getLanAddress() {
   const networks = networkInterfaces();
-  for (const entries of Object.values(networks)) {
+  const candidates = [];
+
+  for (const [name, entries] of Object.entries(networks)) {
     for (const entry of entries || []) {
-      if (entry.family === "IPv4" && !entry.internal) {
-        return entry.address;
+      if (entry.family !== "IPv4" || entry.internal) {
+        continue;
       }
+
+      candidates.push({
+        address: entry.address,
+        score: scoreLanCandidate(name, entry.address),
+      });
     }
   }
-  return null;
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0].address;
+}
+
+function scoreLanCandidate(interfaceName, address) {
+  const name = String(interfaceName || "").toLowerCase();
+  let score = 0;
+
+  if (name.includes("wi-fi") || name.includes("wifi") || name.includes("wlan") || name.includes("wireless")) {
+    score += 60;
+  }
+
+  if (name.includes("ethernet") || /^eth\d+$/i.test(name)) {
+    score += 30;
+  }
+
+  if (
+    name.includes("wsl") ||
+    name.includes("hyper-v") ||
+    name.includes("vethernet") ||
+    name.includes("virtual") ||
+    name.includes("vmware") ||
+    name.includes("docker")
+  ) {
+    score -= 80;
+  }
+
+  if (address.startsWith("192.168.")) {
+    score += 20;
+  } else if (address.startsWith("10.")) {
+    score += 15;
+  } else if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(address)) {
+    score += 5;
+  } else if (address.startsWith("169.254.")) {
+    score -= 40;
+  }
+
+  return score;
 }
 
 function oneOf(value, allowed, fallback) {
