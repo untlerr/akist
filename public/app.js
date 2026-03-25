@@ -283,6 +283,11 @@ function createNoteCard(note) {
   menuButton.dataset.action = "toggle-note-menu";
   menuButton.dataset.id = note.id;
 
+  const pinButton = node.querySelector(".note-pin-button");
+  pinButton.dataset.action = "toggle-note-pin";
+  pinButton.dataset.id = note.id;
+  pinButton.classList.toggle("is-pinned", Boolean(note.pinned));
+
   const menu = node.querySelector(".task-menu");
   menu.classList.toggle("is-hidden", state.noteMenuId !== note.id);
 
@@ -610,6 +615,16 @@ async function handleNoteAction(event) {
     return;
   }
 
+  if (action === "toggle-note-pin") {
+    const response = await api(`/api/notes/${noteId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ pinned: !note.pinned }),
+    });
+    replaceNote(response.note);
+    render();
+    return;
+  }
+
   if (action === "start-note-edit") {
     state.editingNoteId = noteId;
     state.expandedNoteId = noteId;
@@ -822,6 +837,10 @@ function sortCompletedTasks(a, b) {
 }
 
 function sortNotes(a, b) {
+  if (Boolean(a.pinned) !== Boolean(b.pinned)) {
+    return a.pinned ? -1 : 1;
+  }
+
   return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
 }
 

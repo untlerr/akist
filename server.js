@@ -247,6 +247,7 @@ function normalizeNote(input) {
     id: String(input.id || randomUUID()),
     title: String(input.title || "").trim(),
     content: String(input.content || "").trim(),
+    pinned: Boolean(input.pinned),
     createdAt: input.createdAt || new Date().toISOString(),
     updatedAt: input.updatedAt || new Date().toISOString(),
   };
@@ -256,6 +257,7 @@ function sanitizeNotePatch(input) {
   return {
     ...(input.title !== undefined ? { title: String(input.title).trim() } : {}),
     ...(input.content !== undefined ? { content: String(input.content).trim() } : {}),
+    ...(input.pinned !== undefined ? { pinned: Boolean(input.pinned) } : {}),
   };
 }
 
