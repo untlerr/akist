@@ -74,6 +74,7 @@ async function init() {
 
 function bindEvents() {
   els.taskForm.addEventListener("submit", handleTaskSubmit);
+  els.taskTitle.addEventListener("input", () => clearInvalidField(els.taskTitle));
   els.taskDueDate.addEventListener("input", syncComposerDate);
   els.taskDueDate.addEventListener("change", syncComposerDate);
   els.taskDueDate.addEventListener("input", handleComposerDueDateChange);
@@ -96,6 +97,8 @@ function bindEvents() {
   els.searchToggleBtn.addEventListener("click", toggleSearch);
   els.toggleCompletedBtn.addEventListener("click", toggleCompleted);
   els.noteForm.addEventListener("submit", handleNoteSubmit);
+  els.noteTitle.addEventListener("input", () => clearInvalidField(els.noteTitle));
+  els.noteContent.addEventListener("input", () => clearInvalidField(els.noteContent));
   els.toggleNotesBtn.addEventListener("click", toggleNotes);
   document.addEventListener("click", handleDateShellClick);
   document.addEventListener("click", handleTaskAction);
@@ -138,19 +141,21 @@ function renderLoading() {
 }
 
 function render() {
+  const searching = Boolean(state.search);
   const visibleTasks = getVisibleTasks();
+  const visibleNotes = getVisibleNotes();
   const activeTasks = visibleTasks.filter((task) => !task.done).sort(sortActiveTasks);
   const completedTasks = visibleTasks.filter((task) => task.done).sort(sortCompletedTasks);
-  const notes = [...state.notes].sort(sortNotes);
+  const notes = [...visibleNotes].sort(sortNotes);
 
   renderTaskList(els.taskList, activeTasks);
   renderTaskList(els.completedList, completedTasks);
   renderNoteList(els.noteList, notes);
 
   els.completedCount.textContent = String(completedTasks.length);
-  els.completedList.classList.toggle("is-hidden", !state.showCompleted);
+  els.completedList.classList.toggle("is-hidden", !(state.showCompleted || searching));
   els.notesCount.textContent = String(notes.length);
-  els.notesBody.classList.toggle("is-hidden", !state.showNotes);
+  els.notesBody.classList.toggle("is-hidden", !(state.showNotes || searching));
 }
 
 function renderTaskList(container, tasks) {
@@ -294,17 +299,21 @@ function createNoteCard(note) {
 async function handleTaskSubmit(event) {
   event.preventDefault();
 
+  const title = els.taskTitle.value.trim();
+  const missingTitle = !title;
+  setInvalidField(els.taskTitle, missingTitle);
+  if (missingTitle) {
+    els.taskTitle.focus();
+    return;
+  }
+
   const composerReminder = els.taskDueDate.value ? getComposerReminderConfig() : defaultReminderConfig();
   const payload = {
-    title: els.taskTitle.value.trim(),
+    title,
     dueDate: els.taskDueDate.value || null,
     ...composerReminder,
     dayKey: state.todayKey,
   };
-
-  if (!payload.title) {
-    return;
-  }
 
   const response = await api("/api/tasks", {
     method: "POST",
@@ -323,14 +332,27 @@ async function handleTaskSubmit(event) {
 async function handleNoteSubmit(event) {
   event.preventDefault();
 
-  const payload = {
-    title: els.noteTitle.value.trim(),
-    content: els.noteContent.value.trim(),
-  };
+  const title = els.noteTitle.value.trim();
+  const content = els.noteContent.value.trim();
+  const missingTitle = !title;
+  const missingContent = !content;
 
-  if (!payload.title && !payload.content) {
+  setInvalidField(els.noteTitle, missingTitle);
+  setInvalidField(els.noteContent, missingContent);
+
+  if (missingTitle || missingContent) {
+    if (missingTitle) {
+      els.noteTitle.focus();
+    } else {
+      els.noteContent.focus();
+    }
     return;
   }
+
+  const payload = {
+    title,
+    content,
+  };
 
   const response = await api("/api/notes", {
     method: "POST",
@@ -769,6 +791,18 @@ function getVisibleTasks() {
   });
 }
 
+function getVisibleNotes() {
+  if (!state.search) {
+    return state.notes;
+  }
+
+  return state.notes.filter((note) => {
+    const title = String(note.title || "").toLowerCase();
+    const content = String(note.content || "").toLowerCase();
+    return title.includes(state.search) || content.includes(state.search);
+  });
+}
+
 function sortActiveTasks(a, b) {
   if (Boolean(a.pinned) !== Boolean(b.pinned)) {
     return a.pinned ? -1 : 1;
@@ -803,6 +837,14 @@ function replaceNote(updatedNote) {
   if (index >= 0) {
     state.notes[index] = updatedNote;
   }
+}
+
+function setInvalidField(field, invalid) {
+  field.classList.toggle("is-invalid-field", Boolean(invalid));
+}
+
+function clearInvalidField(field) {
+  field.classList.remove("is-invalid-field");
 }
 
 function isOverdue(task) {
