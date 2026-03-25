@@ -124,7 +124,12 @@ async function handleApi(req, res, url) {
       return;
     }
 
-    Object.assign(note, sanitizeNotePatch(body), { updatedAt: new Date().toISOString() });
+    const patch = sanitizeNotePatch(body);
+    const contentChanged = patch.title !== undefined || patch.content !== undefined;
+    Object.assign(note, patch);
+    if (contentChanged) {
+      note.updatedAt = new Date().toISOString();
+    }
     await writeDatabase(db);
     sendJson(res, 200, { note });
     return;
