@@ -190,6 +190,8 @@ function createTaskCard(task) {
   const node = els.taskCardTemplate.content.firstElementChild.cloneNode(true);
   node.classList.toggle("is-done", task.done);
   node.dataset.id = task.id;
+  const editingTask = state.editingTaskId === task.id;
+  node.classList.toggle("is-editing", editingTask);
 
   const checkButton = node.querySelector(".check-button");
   checkButton.dataset.action = "toggle-done";
@@ -207,10 +209,16 @@ function createTaskCard(task) {
     dateEl.textContent = "";
   }
 
+  const taskRow = node.querySelector(".task-row");
+  taskRow.classList.toggle("is-hidden", editingTask);
+
   const editForm = node.querySelector(".task-edit-form");
-  editForm.classList.toggle("is-hidden", state.editingTaskId !== task.id);
+  editForm.classList.toggle("is-hidden", !editingTask);
   editForm.dataset.id = task.id;
-  editForm.querySelector(".task-edit-title").value = task.title;
+  editForm.dataset.originalTitle = task.title;
+  const editTitle = editForm.querySelector(".task-edit-title");
+  editTitle.value = task.title;
+  editTitle.placeholder = task.title;
   const editDateInput = editForm.querySelector(".task-edit-date-input");
   const editDateShell = editForm.querySelector(".task-edit-date-shell");
   const editDateLabel = editForm.querySelector(".task-edit-date-label");
@@ -659,7 +667,9 @@ async function handleTaskFormActions(event) {
 
   event.preventDefault();
   const taskId = form.dataset.id;
-  const title = form.querySelector(".task-edit-title").value.trim();
+  const originalTitle = String(form.dataset.originalTitle || "").trim();
+  const typedTitle = form.querySelector(".task-edit-title").value.trim();
+  const title = typedTitle || originalTitle;
   const dueDate = form.querySelector(".task-edit-date-input").value || null;
   const reminder = dueDate ? getTaskEditReminderConfig(form) : defaultReminderConfig();
 

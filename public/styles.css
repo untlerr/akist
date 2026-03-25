@@ -497,6 +497,15 @@ textarea.is-invalid-field {
   margin-top: 12px;
 }
 
+.task-card.is-editing .task-edit-form {
+  margin-top: 0;
+}
+
+.task-edit-title::placeholder {
+  color: rgba(157, 157, 157, 0.88);
+  font-style: italic;
+}
+
 .task-edit-actions {
   display: flex;
   gap: 8px;
