@@ -254,19 +254,21 @@ function createTaskCard(task) {
 function createNoteCard(note) {
   const node = els.noteCardTemplate.content.firstElementChild.cloneNode(true);
   node.dataset.id = note.id;
+  const editingNote = state.editingNoteId === note.id;
 
   const noteToggle = node.querySelector(".note-toggle");
   noteToggle.dataset.action = "toggle-note";
   noteToggle.dataset.id = note.id;
+  noteToggle.classList.toggle("is-hidden", editingNote);
   node.querySelector(".note-title").textContent = note.title || "untitled";
 
   const content = node.querySelector(".note-content");
   content.textContent = note.content || "";
-  content.classList.toggle("is-hidden", state.expandedNoteId !== note.id);
+  content.classList.toggle("is-hidden", editingNote || state.expandedNoteId !== note.id);
 
   const editForm = node.querySelector(".note-edit-form");
   editForm.dataset.id = note.id;
-  editForm.classList.toggle("is-hidden", state.editingNoteId !== note.id);
+  editForm.classList.toggle("is-hidden", !editingNote);
   editForm.querySelector(".note-edit-title").value = note.title || "";
   editForm.querySelector(".note-edit-content").value = note.content || "";
 

@@ -641,10 +641,11 @@ textarea:focus {
 .note-card-main {
   min-width: 0;
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .note-toggle {
+  display: block;
   width: 100%;
   border: 0;
   background: transparent;
@@ -654,12 +655,14 @@ textarea:focus {
 }
 
 .note-title {
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 .note-content {
   margin: 0;
   color: var(--muted);
+  line-height: 1.4;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
