@@ -645,17 +645,23 @@ textarea:focus {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
+  align-items: start;
 }
 
 .note-form textarea {
   grid-column: 1 / -1;
 }
 
+.note-add-button {
+  justify-self: end;
+  align-self: start;
+}
+
 .note-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
-  align-items: start;
+  align-items: center;
   padding: 10px 14px;
   border-radius: var(--radius-md);
   background: var(--panel-soft);
@@ -663,6 +669,7 @@ textarea:focus {
 }
 
 .note-card.is-expanded {
+  align-items: start;
   padding: 14px;
 }
 
@@ -673,13 +680,15 @@ textarea:focus {
 }
 
 .note-toggle {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
+  min-height: 34px;
   border: 0;
   background: transparent;
   color: inherit;
   text-align: left;
-  padding: 2px 0;
+  padding: 0;
 }
 
 .note-title {
@@ -693,6 +702,10 @@ textarea:focus {
   line-height: 1.4;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.note-card:not(.is-expanded) .note-card-main {
+  gap: 0;
 }
 
 .note-edit-form {
