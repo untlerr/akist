@@ -662,6 +662,10 @@ textarea.is-invalid-field {
 .notes-body {
   display: grid;
   gap: 12px;
+}
+
+.notes-composer,
+.notes-list-panel {
   padding: 14px;
 }
 

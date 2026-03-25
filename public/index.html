@@ -137,25 +137,29 @@
             notes
             <span id="notesCount">0</span>
           </button>
-          <div id="notesBody" class="panel notes-body is-hidden">
-            <form id="noteForm" class="note-form" novalidate>
-              <input
-                id="noteTitle"
-                name="title"
-                type="text"
-                placeholder="note title"
-                maxlength="120"
-              />
-              <button class="button button-primary add-button note-add-button" type="submit" aria-label="Add note">+</button>
-              <textarea
-                id="noteContent"
-                name="content"
-                placeholder="note details"
-                maxlength="1000"
-                rows="3"
-              ></textarea>
-            </form>
-            <div id="noteList" class="task-list"></div>
+          <div id="notesBody" class="notes-body is-hidden">
+            <section class="panel notes-composer">
+              <form id="noteForm" class="note-form" novalidate>
+                <input
+                  id="noteTitle"
+                  name="title"
+                  type="text"
+                  placeholder="note title"
+                  maxlength="120"
+                />
+                <button class="button button-primary add-button note-add-button" type="submit" aria-label="Add note">+</button>
+                <textarea
+                  id="noteContent"
+                  name="content"
+                  placeholder="note details"
+                  maxlength="1000"
+                  rows="3"
+                ></textarea>
+              </form>
+            </section>
+            <section class="panel notes-list-panel">
+              <div id="noteList" class="task-list"></div>
+            </section>
           </div>
         </section>
       </main>
