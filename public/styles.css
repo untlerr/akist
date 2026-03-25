@@ -62,7 +62,7 @@ h2 {
 .app-shell {
   max-width: 860px;
   margin: 0 auto;
-  padding: 40px 20px 60px;
+  padding: 40px 20px 104px;
 }
 
 .topbar {
@@ -606,6 +606,30 @@ textarea:focus {
   gap: 10px;
 }
 
+.section-separator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.8;
+  padding: 2px 0;
+}
+
+.section-separator::before,
+.section-separator::after {
+  content: "";
+  height: 1px;
+  flex: 1 1 auto;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.12) 50%, transparent 100%);
+}
+
+.section-separator span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  flex: 0 0 auto;
+}
+
 .notes-panel {
   display: grid;
   gap: 10px;
@@ -632,16 +656,20 @@ textarea:focus {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: start;
-  padding: 14px;
+  padding: 10px 14px;
   border-radius: var(--radius-md);
   background: var(--panel-soft);
   border: 1px solid var(--line);
 }
 
+.note-card.is-expanded {
+  padding: 14px;
+}
+
 .note-card-main {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .note-toggle {
@@ -651,7 +679,7 @@ textarea:focus {
   background: transparent;
   color: inherit;
   text-align: left;
-  padding: 0;
+  padding: 2px 0;
 }
 
 .note-title {
@@ -703,7 +731,7 @@ textarea:focus {
 
 @media (max-width: 720px) {
   .app-shell {
-    padding: 24px 14px 40px;
+    padding: 24px 14px 72px;
   }
 
   .task-form {

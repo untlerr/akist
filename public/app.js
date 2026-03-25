@@ -255,6 +255,8 @@ function createNoteCard(note) {
   const node = els.noteCardTemplate.content.firstElementChild.cloneNode(true);
   node.dataset.id = note.id;
   const editingNote = state.editingNoteId === note.id;
+  const expandedNote = state.expandedNoteId === note.id || editingNote;
+  node.classList.toggle("is-expanded", expandedNote);
 
   const noteToggle = node.querySelector(".note-toggle");
   noteToggle.dataset.action = "toggle-note";
@@ -264,7 +266,7 @@ function createNoteCard(note) {
 
   const content = node.querySelector(".note-content");
   content.textContent = note.content || "";
-  content.classList.toggle("is-hidden", editingNote || state.expandedNoteId !== note.id);
+  content.classList.toggle("is-hidden", editingNote || !expandedNote);
 
   const editForm = node.querySelector(".note-edit-form");
   editForm.dataset.id = note.id;
@@ -540,11 +542,26 @@ async function handleTaskAction(event) {
 }
 
 async function handleNoteAction(event) {
+  const noteCard = event.target.closest(".note-card");
+
   if (!event.target.closest("[data-action]")) {
     if (state.noteMenuId !== null) {
       state.noteMenuId = null;
+      if (!noteCard) {
+        render();
+      }
+    }
+
+    if (noteCard) {
+      const noteId = noteCard.dataset.id;
+      if (!noteId || state.editingNoteId === noteId) {
+        return;
+      }
+
+      state.expandedNoteId = state.expandedNoteId === noteId ? null : noteId;
       render();
     }
+
     return;
   }
 
