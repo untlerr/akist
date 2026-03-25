@@ -128,6 +128,35 @@
           </button>
           <div id="completedList" class="task-list is-hidden"></div>
         </section>
+
+        <section class="notes-panel">
+          <button id="toggleNotesBtn" class="completed-toggle" type="button">
+            notes
+            <span id="notesCount">0</span>
+          </button>
+          <div id="notesBody" class="panel notes-body is-hidden">
+            <form id="noteForm" class="note-form">
+              <input
+                id="noteTitle"
+                name="title"
+                type="text"
+                placeholder="note title"
+                maxlength="120"
+                required
+              />
+              <textarea
+                id="noteContent"
+                name="content"
+                placeholder="note details"
+                maxlength="1000"
+                rows="3"
+                required
+              ></textarea>
+              <button class="button button-primary add-button" type="submit" aria-label="Add note">+</button>
+            </form>
+            <div id="noteList" class="task-list"></div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -211,6 +240,40 @@
             <div class="task-menu is-hidden">
               <button class="task-menu-item" data-action="start-edit" type="button">edit</button>
               <button class="task-menu-item danger" data-action="delete-task" type="button">delete</button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <template id="noteCardTemplate">
+      <article class="note-card">
+        <div class="note-card-main">
+          <button class="note-toggle" data-action="toggle-note" type="button" aria-label="Open note">
+            <h2 class="note-title"></h2>
+          </button>
+          <p class="note-content is-hidden"></p>
+          <form class="note-edit-form is-hidden">
+            <input class="note-edit-title" type="text" maxlength="120" aria-label="Edit note title" />
+            <textarea class="note-edit-content" maxlength="1000" rows="4" aria-label="Edit note content"></textarea>
+            <div class="task-edit-actions">
+              <button class="task-save button button-primary" data-action="save-note" type="submit">save</button>
+              <button class="task-cancel task-action" data-action="cancel-note-edit" type="button">cancel</button>
+            </div>
+          </form>
+        </div>
+        <div class="task-actions">
+          <div class="task-menu-wrap">
+            <button class="menu-button" data-action="toggle-note-menu" type="button" aria-label="Note options">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="5" r="1.8" />
+                <circle cx="12" cy="12" r="1.8" />
+                <circle cx="12" cy="19" r="1.8" />
+              </svg>
+            </button>
+            <div class="task-menu is-hidden">
+              <button class="task-menu-item" data-action="start-note-edit" type="button">edit</button>
+              <button class="task-menu-item danger" data-action="delete-note" type="button">delete</button>
             </div>
           </div>
         </div>

@@ -73,6 +73,15 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/api/notes") {
+    const body = await readBody(req);
+    const note = normalizeNote(body);
+    db.notes.unshift(note);
+    await writeDatabase(db);
+    sendJson(res, 201, { note });
+    return;
+  }
+
   if (req.method === "PUT" && url.pathname === "/api/tasks/bulk") {
     const body = await readBody(req);
     db.tasks = Array.isArray(body.tasks) ? body.tasks.map(normalizeTask) : db.tasks;
@@ -105,9 +114,33 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "PATCH" && url.pathname.startsWith("/api/notes/")) {
+    const noteId = url.pathname.split("/").pop();
+    const body = await readBody(req);
+    const note = db.notes.find((item) => item.id === noteId);
+
+    if (!note) {
+      sendJson(res, 404, { error: "Note not found." });
+      return;
+    }
+
+    Object.assign(note, sanitizeNotePatch(body), { updatedAt: new Date().toISOString() });
+    await writeDatabase(db);
+    sendJson(res, 200, { note });
+    return;
+  }
+
   if (req.method === "DELETE" && url.pathname.startsWith("/api/tasks/")) {
     const taskId = url.pathname.split("/").pop();
     db.tasks = db.tasks.filter((item) => item.id !== taskId);
+    await writeDatabase(db);
+    sendJson(res, 204, {});
+    return;
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/notes/")) {
+    const noteId = url.pathname.split("/").pop();
+    db.notes = db.notes.filter((item) => item.id !== noteId);
     await writeDatabase(db);
     sendJson(res, 204, {});
     return;
@@ -154,11 +187,13 @@ async function readDatabase() {
     const parsed = JSON.parse(raw);
     return {
       tasks: Array.isArray(parsed.tasks) ? parsed.tasks.map(normalizeTask) : starterTasks(),
+      notes: Array.isArray(parsed.notes) ? parsed.notes.map(normalizeNote) : [],
       dailyNotes: isPlainObject(parsed.dailyNotes) ? parsed.dailyNotes : {},
     };
   } catch {
     const fresh = {
       tasks: starterTasks(),
+      notes: [],
       dailyNotes: {},
     };
     await writeDatabase(fresh);
@@ -204,6 +239,23 @@ function sanitizeTaskPatch(input) {
     ...sanitizeReminderPatch(input),
     ...(input.done !== undefined ? { done: Boolean(input.done) } : {}),
     ...(input.dayKey !== undefined ? { dayKey: String(input.dayKey) } : {}),
+  };
+}
+
+function normalizeNote(input) {
+  return {
+    id: String(input.id || randomUUID()),
+    title: String(input.title || "").trim(),
+    content: String(input.content || "").trim(),
+    createdAt: input.createdAt || new Date().toISOString(),
+    updatedAt: input.updatedAt || new Date().toISOString(),
+  };
+}
+
+function sanitizeNotePatch(input) {
+  return {
+    ...(input.title !== undefined ? { title: String(input.title).trim() } : {}),
+    ...(input.content !== undefined ? { content: String(input.content).trim() } : {}),
   };
 }
 

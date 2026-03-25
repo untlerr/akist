@@ -23,18 +23,31 @@ const els = {
   completedList: document.querySelector("#completedList"),
   completedCount: document.querySelector("#completedCount"),
   toggleCompletedBtn: document.querySelector("#toggleCompletedBtn"),
+  noteForm: document.querySelector("#noteForm"),
+  noteTitle: document.querySelector("#noteTitle"),
+  noteContent: document.querySelector("#noteContent"),
+  noteList: document.querySelector("#noteList"),
+  toggleNotesBtn: document.querySelector("#toggleNotesBtn"),
+  notesCount: document.querySelector("#notesCount"),
+  notesBody: document.querySelector("#notesBody"),
   taskCardTemplate: document.querySelector("#taskCardTemplate"),
+  noteCardTemplate: document.querySelector("#noteCardTemplate"),
 };
 
 const state = {
   tasks: [],
+  notes: [],
   todayKey: "",
   showCompleted: false,
+  showNotes: false,
   search: "",
   editingTaskId: null,
   menuTaskId: null,
   composerReminderOpen: false,
   editingReminderTaskId: null,
+  editingNoteId: null,
+  noteMenuId: null,
+  expandedNoteId: null,
 };
 
 init();
@@ -48,6 +61,7 @@ async function init() {
   try {
     const bootstrap = await api("/api/bootstrap");
     state.tasks = Array.isArray(bootstrap.data.tasks) ? bootstrap.data.tasks : [];
+    state.notes = Array.isArray(bootstrap.data.notes) ? bootstrap.data.notes : [];
     state.todayKey = getEasternDateKey() || bootstrap.todayKey;
     syncComposerDate();
     syncComposerReminderState();
@@ -81,11 +95,15 @@ function bindEvents() {
   els.searchInput.addEventListener("blur", handleSearchBlur);
   els.searchToggleBtn.addEventListener("click", toggleSearch);
   els.toggleCompletedBtn.addEventListener("click", toggleCompleted);
+  els.noteForm.addEventListener("submit", handleNoteSubmit);
+  els.toggleNotesBtn.addEventListener("click", toggleNotes);
   document.addEventListener("click", handleDateShellClick);
   document.addEventListener("click", handleTaskAction);
+  document.addEventListener("click", handleNoteAction);
   document.addEventListener("input", handleDynamicDateInput);
   document.addEventListener("change", handleDynamicDateInput);
   document.addEventListener("submit", handleTaskFormActions);
+  document.addEventListener("submit", handleNoteFormActions);
   document.addEventListener("keydown", handleShortcuts);
 }
 
@@ -116,18 +134,23 @@ function renderLoading() {
   const loading = '<div class="loading-state"><p>failed to load.</p></div>';
   els.taskList.innerHTML = loading;
   els.completedList.innerHTML = loading;
+  els.noteList.innerHTML = loading;
 }
 
 function render() {
   const visibleTasks = getVisibleTasks();
   const activeTasks = visibleTasks.filter((task) => !task.done).sort(sortActiveTasks);
   const completedTasks = visibleTasks.filter((task) => task.done).sort(sortCompletedTasks);
+  const notes = [...state.notes].sort(sortNotes);
 
   renderTaskList(els.taskList, activeTasks);
   renderTaskList(els.completedList, completedTasks);
+  renderNoteList(els.noteList, notes);
 
   els.completedCount.textContent = String(completedTasks.length);
   els.completedList.classList.toggle("is-hidden", !state.showCompleted);
+  els.notesCount.textContent = String(notes.length);
+  els.notesBody.classList.toggle("is-hidden", !state.showNotes);
 }
 
 function renderTaskList(container, tasks) {
@@ -142,6 +165,20 @@ function renderTaskList(container, tasks) {
   }
 
   tasks.forEach((task) => container.append(createTaskCard(task)));
+}
+
+function renderNoteList(container, notes) {
+  container.innerHTML = "";
+
+  if (notes.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.innerHTML = "<p>empty</p>";
+    container.append(empty);
+    return;
+  }
+
+  notes.forEach((note) => container.append(createNoteCard(note)));
 }
 
 function createTaskCard(task) {
@@ -214,6 +251,42 @@ function createTaskCard(task) {
   return node;
 }
 
+function createNoteCard(note) {
+  const node = els.noteCardTemplate.content.firstElementChild.cloneNode(true);
+  node.dataset.id = note.id;
+
+  const noteToggle = node.querySelector(".note-toggle");
+  noteToggle.dataset.action = "toggle-note";
+  noteToggle.dataset.id = note.id;
+  node.querySelector(".note-title").textContent = note.title || "untitled";
+
+  const content = node.querySelector(".note-content");
+  content.textContent = note.content || "";
+  content.classList.toggle("is-hidden", state.expandedNoteId !== note.id);
+
+  const editForm = node.querySelector(".note-edit-form");
+  editForm.dataset.id = note.id;
+  editForm.classList.toggle("is-hidden", state.editingNoteId !== note.id);
+  editForm.querySelector(".note-edit-title").value = note.title || "";
+  editForm.querySelector(".note-edit-content").value = note.content || "";
+
+  const menuButton = node.querySelector(".menu-button");
+  menuButton.dataset.action = "toggle-note-menu";
+  menuButton.dataset.id = note.id;
+
+  const menu = node.querySelector(".task-menu");
+  menu.classList.toggle("is-hidden", state.noteMenuId !== note.id);
+
+  node.querySelectorAll(".task-menu-item").forEach((item) => {
+    item.dataset.id = note.id;
+  });
+
+  const cancelButton = node.querySelector('[data-action="cancel-note-edit"]');
+  cancelButton.dataset.id = note.id;
+
+  return node;
+}
+
 async function handleTaskSubmit(event) {
   event.preventDefault();
 
@@ -241,6 +314,30 @@ async function handleTaskSubmit(event) {
   syncComposerReminderState();
   render();
   els.taskTitle.focus();
+}
+
+async function handleNoteSubmit(event) {
+  event.preventDefault();
+
+  const payload = {
+    title: els.noteTitle.value.trim(),
+    content: els.noteContent.value.trim(),
+  };
+
+  if (!payload.title && !payload.content) {
+    return;
+  }
+
+  const response = await api("/api/notes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  state.notes.unshift(response.note);
+  els.noteForm.reset();
+  state.showNotes = true;
+  render();
+  els.noteTitle.focus();
 }
 
 function handleSearch(event) {
@@ -351,6 +448,11 @@ function toggleCompleted() {
   render();
 }
 
+function toggleNotes() {
+  state.showNotes = !state.showNotes;
+  render();
+}
+
 async function handleTaskAction(event) {
   if (!event.target.closest("[data-action]")) {
     if (state.menuTaskId !== null) {
@@ -368,6 +470,10 @@ async function handleTaskAction(event) {
   if (action === "toggle-menu") {
     state.menuTaskId = state.menuTaskId === taskId ? null : taskId;
     render();
+    return;
+  }
+
+  if (action.startsWith("toggle-note") || action.includes("-note") || action.endsWith("-note-edit")) {
     return;
   }
 
@@ -431,6 +537,64 @@ async function handleTaskAction(event) {
   }
 }
 
+async function handleNoteAction(event) {
+  if (!event.target.closest("[data-action]")) {
+    if (state.noteMenuId !== null) {
+      state.noteMenuId = null;
+      render();
+    }
+    return;
+  }
+
+  const button = event.target.closest("[data-action]");
+  const noteId = button.dataset.id;
+  const note = state.notes.find((item) => item.id === noteId);
+  const action = button.dataset.action;
+
+  if (action === "toggle-note-menu") {
+    state.noteMenuId = state.noteMenuId === noteId ? null : noteId;
+    render();
+    return;
+  }
+
+  if (!note) {
+    return;
+  }
+
+  state.noteMenuId = null;
+
+  if (action === "toggle-note") {
+    state.expandedNoteId = state.expandedNoteId === noteId ? null : noteId;
+    render();
+    return;
+  }
+
+  if (action === "start-note-edit") {
+    state.editingNoteId = noteId;
+    state.expandedNoteId = noteId;
+    render();
+    return;
+  }
+
+  if (action === "cancel-note-edit") {
+    state.editingNoteId = null;
+    render();
+    return;
+  }
+
+  if (action === "delete-note") {
+    await api(`/api/notes/${noteId}`, { method: "DELETE" });
+    state.notes = state.notes.filter((item) => item.id !== noteId);
+    if (state.editingNoteId === noteId) {
+      state.editingNoteId = null;
+    }
+    if (state.expandedNoteId === noteId) {
+      state.expandedNoteId = null;
+    }
+    render();
+  }
+}
+
 async function handleTaskFormActions(event) {
   const form = event.target.closest(".task-edit-form");
   if (!form) {
@@ -455,6 +619,32 @@ async function handleTaskFormActions(event) {
   replaceTask(response.task);
   state.editingTaskId = null;
   state.editingReminderTaskId = null;
+  render();
+}
+
+async function handleNoteFormActions(event) {
+  const form = event.target.closest(".note-edit-form");
+  if (!form) {
+    return;
+  }
+
+  event.preventDefault();
+  const noteId = form.dataset.id;
+  const title = form.querySelector(".note-edit-title").value.trim();
+  const content = form.querySelector(".note-edit-content").value.trim();
+
+  if (!title && !content) {
+    return;
+  }
+
+  const response = await api(`/api/notes/${noteId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ title, content }),
+  });
+
+  replaceNote(response.note);
+  state.editingNoteId = null;
+  state.expandedNoteId = noteId;
   render();
 }
 
@@ -530,15 +720,21 @@ function handleShortcuts(event) {
     event.key === "Escape" &&
     (
       state.menuTaskId !== null ||
+      state.noteMenuId !== null ||
       state.editingTaskId !== null ||
+      state.editingNoteId !== null ||
       state.editingReminderTaskId !== null ||
-      state.composerReminderOpen
+      state.composerReminderOpen ||
+      state.expandedNoteId !== null
     )
   ) {
     state.menuTaskId = null;
+    state.noteMenuId = null;
     state.editingTaskId = null;
+    state.editingNoteId = null;
     state.editingReminderTaskId = null;
     state.composerReminderOpen = false;
+    state.expandedNoteId = null;
     render();
   }
 }
@@ -572,10 +768,21 @@ function sortCompletedTasks(a, b) {
   return new Date(b.completedAt || 0) - new Date(a.completedAt || 0);
 }
 
+function sortNotes(a, b) {
+  return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+}
+
 function replaceTask(updatedTask) {
   const index = state.tasks.findIndex((item) => item.id === updatedTask.id);
   if (index >= 0) {
     state.tasks[index] = updatedTask;
+  }
+}
+
+function replaceNote(updatedNote) {
+  const index = state.notes.findIndex((item) => item.id === updatedNote.id);
+  if (index >= 0) {
+    state.notes[index] = updatedNote;
   }
 }
 
