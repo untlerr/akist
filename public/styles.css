@@ -124,7 +124,10 @@ h2 {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
+  justify-content: start;
   gap: 10px;
+  width: max-content;
+  max-width: 100%;
 }
 
 .search-shell {
@@ -493,12 +496,21 @@ textarea.is-invalid-field {
 .task-edit-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
+  gap: 8px;
   margin-top: 12px;
 }
 
 .task-card.is-editing .task-edit-form {
   margin-top: 0;
+}
+
+.task-card.is-editing {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.task-card.is-editing .task-actions {
+  display: none;
 }
 
 .task-edit-title::placeholder {
@@ -509,7 +521,7 @@ textarea.is-invalid-field {
 .task-edit-actions {
   display: flex;
   gap: 8px;
-  justify-content: end;
+  justify-content: start;
 }
 
 .task-meta {
