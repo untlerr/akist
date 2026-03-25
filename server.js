@@ -441,15 +441,6 @@ function normalizeReminderFields(input) {
     };
   }
 
-  if (input.reminderPreset === "day-before-1800") {
-    return {
-      reminderType: "days-before",
-      reminderDaysBefore: 1,
-      reminderDate: null,
-      reminderTime: "18:00",
-    };
-  }
-
   if (input.reminderPreset === "day-of-0900") {
     return {
       reminderType: "day-of",
@@ -488,7 +479,7 @@ function sanitizeReminderPatch(input) {
 }
 
 function sanitizeReminderType(value) {
-  return oneOf(value, ["none", "day-of", "days-before", "specific-date"], "none");
+  return oneOf(value, ["none", "day-of", "specific-date"], "none");
 }
 
 function sanitizeReminderDaysBefore(value) {
@@ -535,10 +526,6 @@ function computeReminderAt(task) {
 
   const [year, month, day] = targetDate.split("-").map(Number);
   const reminderDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-
-  if (task.reminderType === "days-before") {
-    reminderDate.setDate(reminderDate.getDate() - Math.max(1, Number(task.reminderDaysBefore || 1)));
-  }
 
   const [hours, minutes] = sanitizeReminderTime(task.reminderTime).split(":").map(Number);
   reminderDate.setHours(hours, minutes, 0, 0);

@@ -1137,7 +1137,7 @@ function normalizeReminderInputs(dueDate, typeEl, daysBeforeEl, dateEl, timeCont
     return;
   }
 
-  if (!["none", "day-of", "days-before", "specific-date"].includes(typeEl.value)) {
+  if (!["none", "day-of", "specific-date"].includes(typeEl.value)) {
     typeEl.value = "none";
   }
 
