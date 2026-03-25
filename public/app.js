@@ -37,6 +37,7 @@ const els = {
 const state = {
   tasks: [],
   notes: [],
+  taskDrafts: {},
   todayKey: "",
   showCompleted: false,
   showNotes: false,
@@ -216,13 +217,14 @@ function createTaskCard(task) {
   editForm.classList.toggle("is-hidden", !editingTask);
   editForm.dataset.id = task.id;
   editForm.dataset.originalTitle = task.title;
+  const taskDraft = editingTask ? getTaskDraft(task.id, task) : createTaskDraft(task);
   const editTitle = editForm.querySelector(".task-edit-title");
-  editTitle.value = task.title;
+  editTitle.value = taskDraft.title;
   editTitle.placeholder = task.title;
   const editDateInput = editForm.querySelector(".task-edit-date-input");
   const editDateShell = editForm.querySelector(".task-edit-date-shell");
   const editDateLabel = editForm.querySelector(".task-edit-date-label");
-  editDateInput.value = task.dueDate || "";
+  editDateInput.value = taskDraft.dueDate || "";
   syncDateShell(editDateShell, editDateLabel, editDateInput.value);
   const editReminderToggle = editForm.querySelector(".task-edit-reminder-toggle");
   editReminderToggle.dataset.id = task.id;
@@ -235,10 +237,10 @@ function createTaskCard(task) {
   const editReminderMinute = editForm.querySelector(".task-edit-reminder-minute");
   const editReminderMeridiem = editForm.querySelector(".task-edit-reminder-meridiem");
 
-  editReminderType.value = task.reminderType || "none";
-  editReminderDaysBefore.value = String(task.reminderDaysBefore || 1);
-  editReminderDate.value = task.reminderDate || "";
-  writeReminderTimeParts(editReminderHour, editReminderMinute, editReminderMeridiem, task.reminderTime || "09:00");
+  editReminderType.value = taskDraft.reminderType;
+  editReminderDaysBefore.value = String(taskDraft.reminderDaysBefore);
+  editReminderDate.value = taskDraft.reminderDate || "";
+  writeReminderTimeParts(editReminderHour, editReminderMinute, editReminderMeridiem, taskDraft.reminderTime);
   syncDateShell(editReminderDateShell, editReminderDateLabel, editReminderDate.value);
   syncTaskEditReminderState(editForm);
 
@@ -525,6 +527,7 @@ async function handleTaskAction(event) {
   if (action === "delete-task") {
     await api(`/api/tasks/${taskId}`, { method: "DELETE" });
     state.tasks = state.tasks.filter((item) => item.id !== taskId);
+    clearTaskDraft(taskId);
     if (state.editingTaskId === taskId) {
       state.editingTaskId = null;
     }
@@ -533,13 +536,18 @@ async function handleTaskAction(event) {
   }
 
   if (action === "start-edit") {
+    if (state.editingTaskId && state.editingTaskId !== taskId) {
+      clearTaskDraft(state.editingTaskId);
+    }
     state.editingTaskId = taskId;
     state.editingReminderTaskId = null;
+    state.taskDrafts[taskId] = createTaskDraft(task);
     render();
     return;
   }
 
   if (action === "cancel-edit") {
+    clearTaskDraft(taskId);
     state.editingTaskId = null;
     state.editingReminderTaskId = null;
     render();
@@ -547,6 +555,10 @@ async function handleTaskAction(event) {
   }
 
   if (action === "toggle-edit-reminder") {
+    const form = document.querySelector(`.task-edit-form[data-id="${taskId}"]`);
+    if (form) {
+      syncTaskDraftFromForm(form);
+    }
     state.editingReminderTaskId = state.editingReminderTaskId === taskId ? null : taskId;
     render();
     return;
@@ -569,6 +581,7 @@ async function handleTaskAction(event) {
     });
     replaceTask(response.task);
     if (response.task.done && state.editingTaskId === taskId) {
+      clearTaskDraft(taskId);
       state.editingTaskId = null;
       state.editingReminderTaskId = null;
     }
@@ -683,6 +696,7 @@ async function handleTaskFormActions(event) {
   });
 
   replaceTask(response.task);
+  clearTaskDraft(taskId);
   state.editingTaskId = null;
   state.editingReminderTaskId = null;
   render();
@@ -720,12 +734,25 @@ function handleDynamicDateInput(event) {
     return;
   }
 
+  const editTitleInput = event.target.closest(".task-edit-title");
+  if (editTitleInput) {
+    const form = editTitleInput.closest(".task-edit-form");
+    if (!form) {
+      return;
+    }
+
+    syncTaskDraftFromForm(form);
+    return;
+  }
+
   const editDateInput = event.target.closest(".task-edit-date-input");
   if (editDateInput) {
     const form = editDateInput.closest(".task-edit-form");
     if (!form) {
       return;
     }
+
+    syncTaskDraftFromForm(form);
 
     syncDateShell(
       form.querySelector(".task-edit-date-shell"),
@@ -742,6 +769,8 @@ function handleDynamicDateInput(event) {
     if (!form) {
       return;
     }
+
+    syncTaskDraftFromForm(form);
 
     syncDateShell(
       form.querySelector(".task-edit-reminder-date-shell"),
@@ -763,6 +792,7 @@ function handleDynamicDateInput(event) {
       return;
     }
 
+    syncTaskDraftFromForm(form);
     syncTaskEditReminderState(form);
   }
 }
@@ -794,6 +824,9 @@ function handleShortcuts(event) {
       state.expandedNoteId !== null
     )
   ) {
+    if (state.editingTaskId) {
+      clearTaskDraft(state.editingTaskId);
+    }
     state.menuTaskId = null;
     state.noteMenuId = null;
     state.editingTaskId = null;
@@ -859,6 +892,59 @@ function replaceTask(updatedTask) {
   if (index >= 0) {
     state.tasks[index] = updatedTask;
   }
+}
+
+function createTaskDraft(task) {
+  return {
+    title: String(task.title || ""),
+    dueDate: task.dueDate || "",
+    reminderType: task.reminderType || "none",
+    reminderDaysBefore: Number(task.reminderDaysBefore || 1),
+    reminderDate: task.reminderDate || "",
+    reminderTime: task.reminderTime || "09:00",
+  };
+}
+
+function getTaskDraft(taskId, task) {
+  if (!state.taskDrafts[taskId]) {
+    state.taskDrafts[taskId] = createTaskDraft(task);
+  }
+  return state.taskDrafts[taskId];
+}
+
+function clearTaskDraft(taskId) {
+  delete state.taskDrafts[taskId];
+}
+
+function syncTaskDraftFromForm(form) {
+  const taskId = form.dataset.id;
+  const task = state.tasks.find((item) => item.id === taskId);
+  if (!task) {
+    return;
+  }
+
+  const reminderTime = getReminderTimeParts(
+    form.querySelector(".task-edit-reminder-hour"),
+    form.querySelector(".task-edit-reminder-minute"),
+    form.querySelector(".task-edit-reminder-meridiem")
+  );
+
+  const reminder = getNormalizedReminderConfig(
+    form.querySelector(".task-edit-date-input").value || null,
+    form.querySelector(".task-edit-reminder-type"),
+    form.querySelector(".task-edit-reminder-days-before"),
+    form.querySelector(".task-edit-reminder-date"),
+    reminderTime
+  );
+
+  state.taskDrafts[taskId] = {
+    title: form.querySelector(".task-edit-title").value,
+    dueDate: form.querySelector(".task-edit-date-input").value || "",
+    reminderType: reminder.reminderType,
+    reminderDaysBefore: reminder.reminderDaysBefore,
+    reminderDate: reminder.reminderDate || "",
+    reminderTime: reminder.reminderTime,
+  };
 }
 
 function replaceNote(updatedNote) {

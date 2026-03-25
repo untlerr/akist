@@ -504,13 +504,9 @@ textarea.is-invalid-field {
   margin-top: 0;
 }
 
-.task-card.is-editing {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-}
-
 .task-card.is-editing .task-actions {
-  display: none;
+  align-self: start;
+  margin-top: 2px;
 }
 
 .task-edit-title::placeholder {
